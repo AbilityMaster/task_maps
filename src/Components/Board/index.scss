@@ -1,0 +1,66 @@
+$boardColor: rgb(75, 191, 107);
+
+.board {
+    padding: 7px;
+    margin: 6px;
+    box-sizing: border-box;
+    text-align: left;
+    border-radius: 4px;
+    width: 30%;
+    height: 90px;
+    background-color: $boardColor;
+    overflow: hidden;
+    position: relative;
+    &:hover {
+        background: #51a067;
+        cursor: pointer;
+    }
+    &:hover &__favourite-button {
+        right: 6px;
+        transition: all 0.15s ease-in-out
+    }
+    &_add {
+        text-align: center;
+        background: #c3c3c3;
+        opacity: 0.7;
+        line-height: 76px;
+        &:hover {
+            background: #c3c3c3;
+            opacity: 1;
+        }
+    }
+    &__name {
+        color: #fff;
+    }
+    &__add-new {
+        position: absolute;        
+        color: #fff;
+    }
+    a {
+        position: absolute;
+        z-index: 23;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        text-decoration: none;
+    }
+    &__favourite-button {
+        display: inline-block;
+        color: #fff;
+        opacity: 0.8;
+        position: absolute;
+        font-size: 20px;
+        right: -26px;
+        bottom: 6px;
+        z-index: 800;
+        &:hover {
+            opacity: 1;
+            transform: scale(1.23, 1.23);
+        }
+        &_favourite{
+            color: yellow;
+            right: 6px;
+        }
+    }
+}
