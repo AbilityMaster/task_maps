@@ -1,4 +1,10 @@
 import React, { Component } from 'react';
+import Back_1 from '../../img/1.jpg';
+import Back_2 from '../../img/2.jfif';
+import Back_3 from '../../img/3.jfif';
+import Back_4 from '../../img/4.jfif';
+import Back_5 from '../../img/5.jfif';
+import Back_6 from '../../img/6.jfif';
 
 export default class AddProject extends Component {
     constructor(props) {
@@ -6,7 +12,8 @@ export default class AddProject extends Component {
         this.input = React.createRef();
         this.state = {
             isOpen: props.isOpen,
-            isAllowPress: false
+            isAllowPress: false,
+            background: 'rgb(210, 144, 52)'
         }
     }
     close = () => {
@@ -30,14 +37,20 @@ export default class AddProject extends Component {
     }
 
     createBoard = () => {
-        const { isAllowPress } = this.state;
+        const { isAllowPress, background} = this.state;
         const { sendDataForCreateProject } = this.props;
 
         if (!isAllowPress) {
             return;
         }  
         
-        sendDataForCreateProject(this.input.current.value);
+        sendDataForCreateProject(this.input.current.value, background);
+    }
+
+    selectStyle = (event) => {
+        this.setState({
+            background: event.target.style.background
+        });
     }
 
     get classNames() {
@@ -64,23 +77,25 @@ export default class AddProject extends Component {
     }
 
     render() {
+        const { background } = this.state;
+
         return (
             <div className={this.classNames.createWindow}>
                 <div className='form-container'>
-                    <div className='create-window__add-title'>
+                    <div style={{ background: background }} className='create-window__add-title'>
                         <input ref={this.input} onInput={this.changeInput} placeholder='Добавить заголовок доски'></input>
                         <div onClick={this.close} className='create-window__close'></div>
                     </div>
                     <div className='create-window-background'>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
-                        <div className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: `url(${Back_1})` }} className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: `url(${Back_2})` }} className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: `url(${Back_3})` }} className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: `url(${Back_4})` }} className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: `url(${Back_5})` }} className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: `url(${Back_6})` }} className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: 'rgb(210, 144, 52)'}}  className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: 'rgb(0, 121, 191)'}} className='create-window-background__item'></div>
+                        <div onClick={this.selectStyle} style={{background: 'rgb(81, 152, 57)'}}  className='create-window-background__item'></div>
                     </div>
                 </div>
                 <button onClick={this.createBoard} className={this.classNames.button}>Создать доску</button>

@@ -25,6 +25,7 @@ body {
         display: flex;
         justify-content: left;
         flex-wrap: wrap;
+        padding-bottom: 30px;
     }
     &__headline {
         text-align: left;
@@ -141,6 +142,7 @@ body {
         justify-content: space-between;
         margin-left: 8px;
         &__item {
+            cursor: pointer;
             border-radius: 4px;
             margin-bottom: 4px;
             background: red;

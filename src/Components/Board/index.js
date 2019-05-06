@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { BrowserRouter as Router, Route, Link } from 'react-router-dom';
-import timestamp from 'time-stamp';
+import { Link } from 'react-router-dom';
 import LocalStorage from '../localStorage';
 import projectInfo from '../../../package.json';
 import './index.scss';
@@ -41,25 +40,6 @@ export default class Board extends Component {
         sendToFavourite(LC);
     }
 
-    
-   /* addTime = () => {
-        // 20 sec life time
-        console.log('+');
-
-        const { id } = this.props;
-        const LC = this.localStorage.dataset;   
-        let now = new Date();
-        
-        for (let i = 0; i < LC.length; i++) {
-            if (LC[i].id === id) {
-                LC[i].time ? LC[i].time = now.getTime() : LC[i].time = now.getTime();                
-                LC[i].isAddedToRecentlyViewed ? LC[i].isAddedToRecentlyViewed = false : LC[i].isAddedToRecentlyViewed = true;
-            }
-        }
-
-        this.localStorage.dataset = LC;
-    } */
-
     get classNames() {
         const { isAddedToFavourite } = this.state;
         const classNames = ['board__favourite-button'];
@@ -72,10 +52,10 @@ export default class Board extends Component {
     }
 
     render() {
-        const { className, text, name } = this.props;
+        const { className, text, name, background } = this.props;
 
         return (
-            <div onClick={this.addTime} className={className}>
+            <div onClick={this.addTime} className={className} style={{background: background}}>
                 <div className='board__name'>{name}</div>
                 <div className='board__button'></div>
                 <div className='board__add-new'>{text}</div>

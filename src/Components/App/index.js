@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
 import nanoid from 'nanoid';
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { Route } from 'react-router-dom';
 import { withRouter } from 'react-router';
-import timestamp from 'time-stamp';
 import LocalStorage from '../localStorage';
 import Board from '../Board';
 import projectInfo from '../../../package.json';
@@ -17,11 +16,11 @@ class App extends Component {
         this.localStorage.dataset = this.localStorage.isEmpty ? this.defaultSettings : this.localStorage.dataset;
         const dataLS = this.localStorage.dataset;
         this.state = {
-            timeRecently: 1,
+            lifeCycle: 111 * 1000,
             boards: dataLS,
             isOpenModalAddNewProject: false,
-            isVisibleListOfFavouritesBoards: dataLS.find((element, index) => (dataLS[index].isAddedToFavourite === true)) ? true : false,
-            isVisibleRecentlyViewed: dataLS.find((element, index) => (dataLS[index].isAddedToRecentlyViewed === true)) ? true : false,
+            isVisibleListOfFavouritesBoards: dataLS.find((element) => element.isAddedToFavourite) ? true : false,
+            isVisibleRecentlyViewed: dataLS.find((element) => (element.isAddedToRecentlyViewed && !element.isAddedToFavourite)) ? true : false,
             searchValue: ''
         }
         this.inputSearch = React.createRef();
@@ -29,12 +28,11 @@ class App extends Component {
     }
 
     checkForRecentlyViewed = () => {
-        const lifeCycle = 30 * 1000;
         let arr = this.localStorage.dataset;
-        let dateNow = Date.parse(timestamp('YYYY-MM-DDTHH:mm:ss'));
+        let dateNow = new Date().getTime();
 
         for (let i = 0; i < arr.length; i++) {
-            if ( (dateNow - arr[i].time) > lifeCycle ) {
+            if ((dateNow - arr[i].time) > this.state.lifeCycle) {
                 arr[i].isAddedToRecentlyViewed = false;
             } else {
                 arr[i].isAddedToRecentlyViewed = true;
@@ -110,19 +108,25 @@ class App extends Component {
 
     addToFavourite = (data) => {
         const dataLS = this.localStorage.dataset;
+        let counterBoardsResentlyViewed = 0;
 
-        this.setState({
+        this.setState(() => ({
             boards: data
-        });
-    
+        }));
 
-        if (dataLS.find((element, index) => (dataLS[index].isAddedToRecentlyViewed === true))) {
+        for (let i = 0; i < dataLS.length; i++) {
+            if (dataLS[i].isAddedToFavourite === false && dataLS[i].isAddedToRecentlyViewed === true) {
+                counterBoardsResentlyViewed++;
+            }
+        }
+
+        if (counterBoardsResentlyViewed === 0) {
             this.setState({
-                isVisibleRecentlyViewed: true
+                isVisibleRecentlyViewed: false
             });
         } else {
             this.setState({
-                isVisibleRecentlyViewed: false
+                isVisibleRecentlyViewed: true
             });
         }
 
@@ -171,14 +175,16 @@ class App extends Component {
         }
     }
 
-    getDataForCreateProject = (data) => {
+    getDataForCreateProject = (data, background) => {
         const { boards } = this.state;
         let id = nanoid(20);
 
         boards.push({
             id,
-            projectName: data
+            projectName: data,
+            background
         });
+        
         this.localStorage.dataset = boards;
         this.props.history.push(`/b/${id}/${data}`);
         this.setState({
@@ -190,15 +196,15 @@ class App extends Component {
 
     renderProjectCardsRecentlyViewed = () => {
         const { boards } = this.state;
-        const tempArr = [];
+        const ArrayOfRecentlyViewedBoards = [];
 
         for (let i = 0; i < boards.length; i++) {
             if (boards[i].isAddedToRecentlyViewed && !boards[i].isAddedToFavourite) {
-                tempArr.push(boards[i]);
+                ArrayOfRecentlyViewedBoards.push(boards[i]);
             }
         }
 
-        return tempArr.map((value) =>
+        return ArrayOfRecentlyViewedBoards.map((value) =>
             <Board
                 key={value.id}
                 id={value.id}
@@ -212,15 +218,15 @@ class App extends Component {
 
     renderProjectCardsAddedToFavourite = () => {
         const { boards } = this.state;
-        const tempArr = [];
+        const ArrayOfAddedToFavouriteBoards = [];
 
         for (let i = 0; i < boards.length; i++) {
             if (boards[i].isAddedToFavourite) {
-                tempArr.push(boards[i]);
+                ArrayOfAddedToFavouriteBoards.push(boards[i]);
             }
         }
 
-        return tempArr.map((value) =>
+        return ArrayOfAddedToFavouriteBoards.map((value) =>
             <Board
                 key={value.id}
                 id={value.id}
@@ -239,6 +245,7 @@ class App extends Component {
             <Board
                 key={value.id}
                 id={value.id}
+                background={value.background}
                 className={this.classNames.default}
                 name={value.projectName}
                 sendToFavourite={this.addToFavourite}
@@ -274,10 +281,10 @@ class App extends Component {
 
 
         if (tempArr.length === 0) {
-            this.setState({ 
+            this.setState({
                 isVisibleListOfFavouritesBoards: false,
                 isVisibleRecentlyViewed: false
-             });
+            });
         }
     };
 

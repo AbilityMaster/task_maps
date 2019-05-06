@@ -20,13 +20,20 @@ $boardColor: rgb(75, 191, 107);
         transition: all 0.15s ease-in-out
     }
     &_add {
+        font-size: 14px;
         text-align: center;
-        background: #c3c3c3;
-        opacity: 0.7;
+        color: #6b778c;
+        background-color: rgba(9,30,66,.08);
         line-height: 76px;
         &:hover {
-            background: #c3c3c3;
-            opacity: 1;
+            color: #172b4d;
+            background-color: rgba(9,30,66,.13);
+            transition-property: color, background-color;
+            transition-duration: 100ms;
+            transition-timing-function: ease;
+        }
+        &:active {
+            background:rgba(9,30,66,.25);
         }
     }
     &__name {
