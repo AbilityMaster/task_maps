@@ -195,7 +195,7 @@ class App extends Component {
 
     }
 
-    renderProjectCardsRecentlyViewed = () => {
+    renderCardsRecentlyViewed = () => {
         const { boards } = this.state;
         const arrayOfRecentlyViewedBoards = [];
 
@@ -217,17 +217,18 @@ class App extends Component {
         )
     }
 
-    renderProjectCardsAddedToFavourite = () => {
-        const { boards } = this.state;
-        const ArrayOfAddedToFavouriteBoards = [];
+    renderCardsFavourite = () => {
+        //const { boards } = this.state;
+        const dataLS = this.localStorage.dataset;
+        const favouriteBoards = [];
 
-        for (let i = 0; i < boards.length; i++) {
-            if (boards[i].isFavourite) {
-                ArrayOfAddedToFavouriteBoards.push(boards[i]);
+        for (let i = 0; i < dataLS.length; i++) {
+            if (dataLS[i].isFavourite) {
+                favouriteBoards.push(dataLS[i]);
             }
         }
 
-        return ArrayOfAddedToFavouriteBoards.map((value) =>
+        return favouriteBoards.map((value) =>
             <Board
                 key={value.id}
                 id={value.id}
@@ -280,7 +281,28 @@ class App extends Component {
             });
         }, 300);
 
-        console.log(boards.length);
+        const isFavouriteExists = dataLS.find( element => ( element.projectName.indexOf(searchValue) !== -1 && element.isFavourite )) ? true : false;
+        const isRecentlyViewedExists = dataLS.find( element => ( element.projectName.indexOf(searchValue) !== -1 && element.isAddedToRecentlyViewed )) ? true : false;
+
+        if (!isFavouriteExists) {
+            this.setState({
+                isVisibleListOfFavouritesBoards: false,
+            });
+        } else {
+            this.setState({
+                isVisibleListOfFavouritesBoards: true,
+            }); 
+        }
+
+        if (!isRecentlyViewedExists) {
+            this.setState({
+                isVisibleRecentlyViewed: false,
+            });
+        } else {
+            this.setState({
+                isVisibleRecentlyViewed: true,
+            });
+        }
 
         if (boards.length === 0) {
             this.setState({
@@ -312,13 +334,13 @@ class App extends Component {
                                     <div className={this.classNames.containerWithBoards}>
                                         <div className='boards__headline'>Отмеченные доски</div>
                                         <div className='boards__row'>
-                                            {this.renderProjectCardsAddedToFavourite()}
+                                            {this.renderCardsFavourite()}
                                         </div>
                                     </div>
                                     <div className={this.classNames.containerRecentlyViewed}>
                                         <div className='boards__headline'>Недавно просмотренное</div>
                                         <div className='boards__row'>
-                                            {this.renderProjectCardsRecentlyViewed()}
+                                            {this.renderCardsRecentlyViewed()}
                                         </div>
                                     </div>
                                     <div className='boards__container'>
