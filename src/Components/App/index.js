@@ -19,8 +19,8 @@ class App extends Component {
             lifeCycle: 111 * 1000,
             boards: dataLS,
             isOpenModalAddNewProject: false,
-            isVisibleListOfFavouritesBoards: dataLS.find((element) => element.isAddedToFavourite) ? true : false,
-            isVisibleRecentlyViewed: dataLS.find((element) => (element.isAddedToRecentlyViewed && !element.isAddedToFavourite)) ? true : false,
+            isVisibleListOfFavouritesBoards: dataLS.find((element) => element.isFavourite) ? true : false,
+            isVisibleRecentlyViewed: dataLS.find((element) => (element.isAddedToRecentlyViewed && !element.isFavourite)) ? true : false,
             searchValue: ''
         }
         this.inputSearch = React.createRef();
@@ -48,49 +48,49 @@ class App extends Component {
             projectName: 'Test Project',
             time: new Date().getTime(),
             isAddedToRecentlyViewed: true,
-            isAddedToFavourite: false
+            isFavourite: false
         },
         {
             id: nanoid(10),
             projectName: 'Tasks list',
             time: new Date().getTime(),
             isAddedToRecentlyViewed: true,
-            isAddedToFavourite: false
+            isFavourite: false
         },
         {
             id: nanoid(10),
             projectName: 'Help us',
             time: new Date().getTime(),
             isAddedToRecentlyViewed: true,
-            isAddedToFavourite: false
+            isFavourite: false
         },
         {
             id: nanoid(10),
             projectName: 'Try react',
             time: new Date().getTime(),
             isAddedToRecentlyViewed: true,
-            isAddedToFavourite: false
+            isFavourite: false
         },
         {
             id: nanoid(10),
             projectName: 'Help us',
             time: new Date().getTime(),
             isAddedToRecentlyViewed: true,
-            isAddedToFavourite: false
+            isFavourite: false
         },
         {
             id: nanoid(10),
             projectName: 'Help us',
             time: new Date().getTime(),
             isAddedToRecentlyViewed: true,
-            isAddedToFavourite: false
+            isFavourite: false
         },
         {
             id: nanoid(10),
             projectName: 'Help us',
             time: new Date().getTime(),
             isAddedToRecentlyViewed: true,
-            isAddedToFavourite: false
+            isFavourite: false
         }]
     }
 
@@ -115,7 +115,7 @@ class App extends Component {
         }));
 
         for (let i = 0; i < dataLS.length; i++) {
-            if (dataLS[i].isAddedToFavourite === false && dataLS[i].isAddedToRecentlyViewed === true) {
+            if (dataLS[i].isFavourite === false && dataLS[i].isAddedToRecentlyViewed === true) {
                 counterBoardsResentlyViewed++;
             }
         }
@@ -130,7 +130,7 @@ class App extends Component {
             });
         }
 
-        if (dataLS.find((element, index) => (dataLS[index].isAddedToFavourite === true))) {
+        if (dataLS.find((element, index) => (dataLS[index].isFavourite === true))) {
             this.setState({
                 isVisibleListOfFavouritesBoards: true
             });
@@ -199,7 +199,7 @@ class App extends Component {
         const arrayOfRecentlyViewedBoards = [];
 
         for (let i = 0; i < boards.length; i++) {
-            if (boards[i].isAddedToRecentlyViewed && !boards[i].isAddedToFavourite) {
+            if (boards[i].isAddedToRecentlyViewed && !boards[i].isFavourite) {
                 arrayOfRecentlyViewedBoards.push(boards[i]);
             }
         }
@@ -221,7 +221,7 @@ class App extends Component {
         const ArrayOfAddedToFavouriteBoards = [];
 
         for (let i = 0; i < boards.length; i++) {
-            if (boards[i].isAddedToFavourite) {
+            if (boards[i].isFavourite) {
                 ArrayOfAddedToFavouriteBoards.push(boards[i]);
             }
         }
@@ -265,6 +265,7 @@ class App extends Component {
             }
         }
 
+        console.log(tempArr);
         this.setState({ searchValue }, () => {
             if (this.inputSearch.current) {
                 this.inputSearch.current.focus();

@@ -10,7 +10,7 @@ export default class Board extends Component {
         this.localStorage = new LocalStorage(projectInfo.version, projectInfo.name);
         const dataLS = this.localStorage.dataset;
         this.state = {
-            isAddedToFavourite: dataLS.find((element, index) => ( dataLS[index].id === props.id )).isAddedToFavourite
+            isFavourite: dataLS.find((element, index) => ( dataLS[index].id === props.id )).isFavourite
         }
     }
 
@@ -31,8 +31,8 @@ export default class Board extends Component {
 
         for (let i = 0; i < LC.length; i++) {
             if (LC[i].id === id) {
-                LC[i].isAddedToFavourite ? LC[i].isAddedToFavourite = false : LC[i].isAddedToFavourite = true;
-                this.state.isAddedToFavourite ?  this.setState({ isAddedToFavourite: false }) : this.setState({ isAddedToFavourite: true })
+                LC[i].isFavourite ? LC[i].isFavourite = false : LC[i].isFavourite = true;
+                this.state.isFavourite ?  this.setState({ isFavourite: false }) : this.setState({ isFavourite: true })
             }
         }
 
@@ -41,10 +41,10 @@ export default class Board extends Component {
     }
 
     get classNames() {
-        const { isAddedToFavourite } = this.state;
+        const { isFavourite } = this.state;
         const classNames = ['board__favourite-button'];
 
-        if (isAddedToFavourite) {
+        if (isFavourite) {
             classNames.push('board__favourite-button_favourite');
         }
 
