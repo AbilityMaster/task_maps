@@ -21,7 +21,8 @@ class App extends Component {
             isOpenModalAddNewProject: false,
             isVisibleListOfFavouritesBoards: dataLS.find((element) => element.isFavourite) ? true : false,
             isVisibleRecentlyViewed: dataLS.find((element) => (element.isAddedToRecentlyViewed && !element.isFavourite)) ? true : false,
-            searchValue: ''
+            searchValue: '',
+            search: [],
         }
         this.inputSearch = React.createRef();
         this.checkForRecentlyViewed();
@@ -255,17 +256,16 @@ class App extends Component {
     }
 
     search = (event) => {
-        const { boards } = this.state;
-        const tempArr = [];
+        const dataLS = this.localStorage.dataset;
+        const boards = [];
         const searchValue = event.target.value;
 
-        for (let i = 0; i < boards.length; i++) {
-            if (boards[i].projectName.indexOf(searchValue) !== -1) {
-                tempArr.push(boards[i]);
+        for (let i = 0; i < dataLS.length; i++) {
+            if (dataLS[i].projectName.indexOf(searchValue) !== -1) {
+                boards.push(dataLS[i]);
             }
         }
-
-        console.log(tempArr);
+        
         this.setState({ searchValue }, () => {
             if (this.inputSearch.current) {
                 this.inputSearch.current.focus();
@@ -273,20 +273,21 @@ class App extends Component {
         });
 
         setTimeout(() => {
-            this.setState({ boards: tempArr }, () => {
+            this.setState({ boards }, () => {
                 if (this.inputSearch.current) {
                     this.inputSearch.current.focus();
                 }
             });
         }, 300);
 
+        console.log(boards.length);
 
-        if (tempArr.length === 0) {
+        if (boards.length === 0) {
             this.setState({
                 isVisibleListOfFavouritesBoards: false,
                 isVisibleRecentlyViewed: false
             });
-        }
+        } 
     };
 
     render() {

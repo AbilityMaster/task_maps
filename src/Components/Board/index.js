@@ -8,9 +8,10 @@ export default class Board extends Component {
     constructor(props) {
         super();
         this.localStorage = new LocalStorage(projectInfo.version, projectInfo.name);
+        const id = props.id;
         const dataLS = this.localStorage.dataset;
         this.state = {
-            isFavourite: dataLS.find((element, index) => ( dataLS[index].id === props.id )).isFavourite
+            isFavourite: dataLS.find(element => ( element.id === id )).isFavourite
         }
     }
 
