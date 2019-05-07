@@ -196,15 +196,15 @@ class App extends Component {
 
     renderProjectCardsRecentlyViewed = () => {
         const { boards } = this.state;
-        const ArrayOfRecentlyViewedBoards = [];
+        const arrayOfRecentlyViewedBoards = [];
 
         for (let i = 0; i < boards.length; i++) {
             if (boards[i].isAddedToRecentlyViewed && !boards[i].isAddedToFavourite) {
-                ArrayOfRecentlyViewedBoards.push(boards[i]);
+                arrayOfRecentlyViewedBoards.push(boards[i]);
             }
         }
 
-        return ArrayOfRecentlyViewedBoards.map((value) =>
+        return arrayOfRecentlyViewedBoards.map((value) =>
             <Board
                 key={value.id}
                 id={value.id}
@@ -295,11 +295,11 @@ class App extends Component {
             <React.Fragment>
                 <Route exact path='/' component={() => (
                     <React.Fragment>
-                        <div className={this.classNames.overlay}></div>
+                        <div className={this.classNames.overlay} />
                         <div className='control-panel'>
                             <div className='control-panel__container'>
                                 <div onChange={this.search} className='left-sidebar'>
-                                    <input ref={this.inputSearch} defaultValue={searchValue} className='left-sidebar__search' placeholder=''></input>
+                                    <input ref={this.inputSearch} defaultValue={searchValue} className='left-sidebar__search' placeholder='' />
                                 </div>
                                 <div className='boards'>
                                     <AddProject

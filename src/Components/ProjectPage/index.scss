@@ -6,7 +6,7 @@
     &__name {
         font-family: Helvetica Neue,Arial,Helvetica,sans-serif;
         color: #fff;
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 700;        
         cursor: pointer;
         display: inline-block;
@@ -17,13 +17,14 @@
             font-size: 18px;
             position: absolute;
             top: 0;
-            left: 0;
+            left: 8px;
+            bottom: 0;
+            margin: auto;
             height: 30px;
-            margin-top: 1px;
-            margin-right: 1px;
-            margin-left: -2px;
+            position: absolute;
             padding: 0 10px 0 9px;
             border-radius: 4px;
+            line-height: 30px;
             outline: 0;
             display: none;
             &_visible {
@@ -43,6 +44,8 @@
 }
 
 .header-board {
+    display: inline-block;
+    position: relative;
     padding: 15px 20px;
 }
 
