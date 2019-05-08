@@ -1,48 +1,51 @@
 import React, { Component } from 'react';
 import nanoid from 'nanoid';
 import { DEFAULT_COLOR } from '../const';
-import LocalStorage from '../localStorage';
-import projectInfo from '../../../package.json';
 import List from './List';
 import './index.scss';
 
 export default class ProjectPage extends Component {
     constructor(props) {
         super();
-        this.localStorage = new LocalStorage(projectInfo.version, projectInfo.name);
+        this.localStorage = props.localStorage;
         const dataLS = this.localStorage.dataset;
-        this.saveTime(props.match.params.id);
+        const projectId = props.match.params.id;
+        this.saveTime(projectId);
         this.state = {
-            projectName: dataLS.find(element => element.id === props.match.params.id).projectName ? dataLS.find(element => element.id === props.match.params.id).projectName : '',
+            projectName: this.getprojectName(dataLS, projectId),
             isVisibleAddHeaderForm: false,
             isVisibleInputNameProject: false,
-            lists: dataLS.find(el => el.id === props.match.params.id).lists ? dataLS.find(el => el.id === props.match.params.id).lists : []
+            lists: this.getLists(dataLS, projectId)
         }
         this.input = React.createRef();
         this.inputForNameProject = React.createRef();
+        this.draggbleContainer = React.createRef();
     }
 
     saveTime = (id) => {
-        const LC = this.localStorage.dataset;
+        const dataLS = this.localStorage.dataset;
         let now = new Date();
 
-        for (let i = 0; i < LC.length; i++) {
-            if (LC[i].id === id) {
-                LC[i].time ? LC[i].time = now.getTime() : LC[i].time = now.getTime();
-                LC[i].isAddedToRecentlyViewed ? LC[i].isAddedToRecentlyViewed = true : LC[i].isAddedToRecentlyViewed = true;
+        for (let i = 0; i < dataLS.length; i++) {
+            if (dataLS[i].id === id) {
+                dataLS[i].time ? dataLS[i].time = now.getTime() : dataLS[i].time = now.getTime();
+                dataLS[i].isRecentlyViewed ? dataLS[i].isRecentlyViewed = true : dataLS[i].isRecentlyViewed = true;
             }
         }
 
-        this.localStorage.dataset = LC;
+        this.localStorage.dataset = dataLS;
     };
 
+    getprojectName = (dataLS, id) => {
+        const project = dataLS.find( project => project.id === id);
 
-    get projectName() {
-        const temp = this.localStorage.dataset;
-        const id =  this.props.match.params.id
-        const project = temp.find( elem => elem.id === id);
+        return project.name || '';
+    }
 
-        return project.projectName || '';
+    getLists = (dataLS, id) => {
+        const project = dataLS.find( project => project.id === id);
+
+        return project.lists || [];
     }
 
     get background() {
@@ -75,12 +78,19 @@ export default class ProjectPage extends Component {
         const { lists } = this.state;
         const id = this.props.match.params.id;
         const dataLS = this.localStorage.dataset;
+        const listName = this.input.current.value;
+        const position = lists.length;
+
+        if (!listName) {
+            return;
+        }
 
         lists.push({
             id: nanoid(3),
-            header: this.input.current.value
+            name: listName,
+            position: position
         });
-    
+        
         for (let i = 0; i < dataLS.length; i++) {
             if (dataLS[i].id === id) {
                 dataLS[i].lists = lists;
@@ -108,11 +118,20 @@ export default class ProjectPage extends Component {
                 key={value.id}
                 listId={value.id}
                 projectId={id}
-                header={value.header}
+                name={value.name}
+                dropToEl={this.dropToEl}
+                lists={lists}
+                list={value}
                 localStorage={this.localStorage}
             />
         );
     };
+
+    dropToEl = (data) => {
+        this.setState({
+            lists: data
+        })
+    }
 
     componentWillUnmount() {
         document.removeEventListener('click', this.handleClickOutside, false);
@@ -149,7 +168,7 @@ export default class ProjectPage extends Component {
 
         for (let i = 0; i < dataLS.length; i++) {
             if (dataLS[i].id === id) {
-                dataLS[i].projectName = projectName === '' ? dataLS[i].projectName : projectName;
+                dataLS[i].name = projectName === '' ? dataLS[i].name : projectName;
             }
         }
 
@@ -190,6 +209,40 @@ export default class ProjectPage extends Component {
             projectName: classNames.projectName.join(' '),
             projectNameInput: classNames.projectNameInput.join(' ')
         }
+    }
+
+    onDragOver = (ev) => {
+        ev.preventDefault();
+    }
+
+    isEnteredToDropElement = (event) => {
+        this.onDrop(event);
+    }
+
+    onDrop = (event, cat) => {
+        const id = this.props.match.params.id;
+        const dataLS = this.localStorage.dataset;
+        let listId = event.dataTransfer.getData('listId');
+        const { lists } = this.state;
+        let tempValue = '';
+
+        const project = dataLS.find( project => ( project.id === id ));
+        const listArr = project ? project.lists : [];
+        const list = listArr ? listArr.find( list => ( list.id === listId)) : [];
+        const listIndex = listArr ? listArr.findIndex( list => ( list.id === listId)) : [];
+
+        const listIndex2 = 1;
+
+        tempValue = lists[listIndex];
+        lists[listIndex] = lists[listIndex2];
+        lists[listIndex2] = tempValue;
+
+        console.log(event.target);
+
+        this.setState({
+            ...this.state,
+            lists
+        })
     }
 
     render() {

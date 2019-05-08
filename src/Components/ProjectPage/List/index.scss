@@ -1,13 +1,28 @@
+.cards-wrapper {
+    overflow-y: auto;
+}
+
 .list {
     color: hsla(0,0%,100%,.8);
     width: 270px;
     border-radius: 4px;
+    position: relative;
     background: #dfe1e6;
     font-family: Helvetica Neue,Arial,Helvetica,sans-serif;
     font-size: 14px;
     margin: 8px;
     padding: 4px;
     cursor: pointer;
+    &__layer {
+        border-radius: 4px;
+        width: 100%;
+        background: rgba(9,30,66,.13);
+        z-index: -1;
+        display: none;
+        &_visible {
+            display: block;
+        }
+    } 
     &__header-textarea_hidden {
         position: absolute;
         top: 0;

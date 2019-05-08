@@ -8,37 +8,43 @@ export default class Board extends Component {
     constructor(props) {
         super();
         this.localStorage = new LocalStorage(projectInfo.version, projectInfo.name);
-        const id = props.id;
         const dataLS = this.localStorage.dataset;
+        const id = props.id;
         this.state = {
-            isFavourite: dataLS.find(element => ( element.id === id )).isFavourite
+            isFavourite: this.getIsFavourite(dataLS, id)
         }
+    }
+
+    getIsFavourite = (dataLS, id) => {
+        const project = dataLS.find(element => ( element.id === id ));
+        
+        return project.isFavourite ? project.isFavourite : false;
     }
 
     getLink = () => {
         const { id, name } = this.props;
-        const tempArr = name.split('');
+        const nameSplit = name.split('');
 
         if (name.indexOf(' ') !== -1) {
-            tempArr[name.indexOf(' ')] = '-';
+            nameSplit[name.indexOf(' ')] = '-';
         }
 
-        return `/b/${id}/${tempArr.join('')}`;
+        return `/b/${id}/${nameSplit.join('')}`;
     }
 
     addToFavourite = () => {
         const { id, sendToFavourite } = this.props;
-        const LC = this.localStorage.dataset;        
+        const dataLS = this.localStorage.dataset;        
 
-        for (let i = 0; i < LC.length; i++) {
-            if (LC[i].id === id) {
-                LC[i].isFavourite ? LC[i].isFavourite = false : LC[i].isFavourite = true;
+        for (let i = 0; i < dataLS.length; i++) {
+            if (dataLS[i].id === id) {
+                dataLS[i].isFavourite ? dataLS[i].isFavourite = false : dataLS[i].isFavourite = true;
                 this.state.isFavourite ?  this.setState({ isFavourite: false }) : this.setState({ isFavourite: true })
             }
         }
 
-        this.localStorage.dataset = LC;
-        sendToFavourite(LC);
+        this.localStorage.dataset = dataLS;
+        sendToFavourite(dataLS);
     }
 
     get classNames() {

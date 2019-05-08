@@ -9,14 +9,21 @@ export default class List extends Component {
         super();
         this.localStorage = props.localStorage;
         this.state = {
-            listName: props.header,
+            listName: props.name,
             isVisibleAddCardForm: false,
             isVisibleTextareaList: false,
-            cards: this.getCards(props)
+            cards: this.getCards(props),
+            isDragged: false,
+            lists: props.lists,
+            list: props.list,
+            isVisibleLayer: false,
+            shiftX: 0,
+            shiftY: 0
         }
         this.textareaNameList = React.createRef();
         this.hiddenTextAreaNameList = React.createRef();
         this.textareaCard = React.createRef();
+        this.$card = React.createRef();
     }
 
     getCards = (props) => {
@@ -24,8 +31,8 @@ export default class List extends Component {
         const listId = props.listId;
         const dataLS = this.localStorage.dataset;
 
-        const project = dataLS.find(element => (element.id === projectId));
-        const lists = project ? project.lists.find(element => (element.id === listId)) : '';
+        const project = dataLS.find(project => (project.id === projectId));
+        const lists = project ? project.lists.find(project => (project.id === listId)) : '';
 
         return lists.cards || [];
     }
@@ -56,15 +63,20 @@ export default class List extends Component {
         const projectId = this.props.projectId;
         const listId = this.props.listId;
         const dataLS = this.localStorage.dataset;
+        const cardName = this.textareaCard.current.value;
 
-        const project = dataLS.find(element => (element.id === projectId));
-        const projectIndex = dataLS.findIndex(element => (element.id === projectId));
-        const list = project ? project.lists.find(element => (element.id === listId)) : '';
-        const listIndex = project ? project.lists.find(element => (element.id === listId)) : 0;
+        if (!cardName) {
+            return;
+        }
+
+        const project = dataLS.find(project => (project.id === projectId));
+        const projectIndex = dataLS.findIndex(project => (project.id === projectId));
+        const list = project ? project.lists.find(list => (list.id === listId)) : '';
+        const listIndex = project ? project.lists.find(list => (list.id === listId)) : 0;
 
         cards.push({
             id: nanoid(4),
-            text: this.textareaCard.current.value
+            text: cardName
         });
 
         list.cards = cards;
@@ -104,10 +116,10 @@ export default class List extends Component {
 
         for (let i = 0; i < dataLS.length; i++) {
             if (dataLS[i].id === id) {
-                let index = dataLS[i].lists.findIndex(element => (element.id === listId));
+                let index = dataLS[i].lists.findIndex(lists => (lists.id === listId));
 
                 if (index !== -1) {
-                    dataLS[i].lists[index].header = dataLS[i].lists[index].header ? dataLS[i].lists[index].header = listName : '';
+                    dataLS[i].lists[index].name = dataLS[i].lists[index].name ? dataLS[i].lists[index].name = listName : '';
                 }
             }
         }
@@ -121,14 +133,15 @@ export default class List extends Component {
     };
 
     get classNames() {
-        const { isVisibleAddCardForm, isVisibleTextareaList } = this.state;
+        const { isVisibleAddCardForm, isVisibleTextareaList, isVisibleLayer } = this.state;
         const classNames = {
             list: ['list'],
             addCard: ['list__add-card'],
             addCardForm: ['list__form'],
-            listHeader: ['list__header-value'],
+            listName: ['list__header-value'],
             listTextareaHeader: ['list__header-textarea'],
-            hiddenlistHeader: ['list__header-textarea_hidden']
+            hiddenlistName: ['list__header-textarea_hidden'],
+            listLayer: ['list__layer']
         }
 
         if (isVisibleAddCardForm) {
@@ -140,18 +153,24 @@ export default class List extends Component {
         }
 
         if (isVisibleTextareaList) {
-            classNames.listHeader.push('list__header-value_hidden');
-            classNames.hiddenlistHeader.push('list__header-textarea_hidden_visible');
+            classNames.listName.push('list__header-value_hidden');
+            classNames.hiddenlistName.push('list__header-textarea_hidden_visible');
             classNames.listTextareaHeader.push('list__header-textarea_visible');
+        }
+
+        if (isVisibleLayer) {
+            console.log('+++');
+            classNames.listLayer.push('list__layer_visible');
         }
 
         return {
             list: classNames.list.join(' '),
             addCard: classNames.addCard.join(' '),
             addCardForm: classNames.addCardForm.join(' '),
-            listHeader: classNames.listHeader.join(' '),
+            listName: classNames.listName.join(' '),
             listTextareaHeader: classNames.listTextareaHeader.join(' '),
-            hiddenlistHeader: classNames.hiddenlistHeader.join(' ')
+            hiddenlistName: classNames.hiddenlistName.join(' '),
+            listLayer: classNames.listLayer.join(' ')
         }
     }
 
@@ -185,14 +204,123 @@ export default class List extends Component {
         ));
     }
 
+    onDrop = (event, cat) => {
+        const dataLS = this.localStorage.dataset;
+        const { listId, projectId, dropToEl } = this.props;
+        const { lists } = this.state;
+        let indexForInsert = 0;
+
+        const project = dataLS.find(project => (project.id === projectId));
+        const draggedList = project ? project.lists.find(list => (list.id === event.dataTransfer.getData('listId'))) : [];
+
+        indexForInsert = lists.findIndex(list => (list.id === listId))
+        const indexForDelete = parseFloat(event.dataTransfer.getData('indexForDelete'))
+
+        if (indexForDelete <= indexForInsert) {
+            indexForInsert += 1;
+        }
+
+        lists.splice(indexForInsert, 0, draggedList);
+
+        dropToEl(lists);
+    }
+
+    onDragStart = (event, listIsd) => {
+        const { lists } = this.state;
+        const { listId, list } = this.props;
+
+        const indexForDelete = lists.findIndex(list => (list.id === listId));
+
+        lists.splice(indexForDelete, 1);
+
+        event.dataTransfer.setData('listId', listId);
+        event.dataTransfer.setData('indexForDelete', indexForDelete);
+        event.dataTransfer.effectAllowed = 'move';
+
+        this.setState({
+            lists,
+            draggedList: list,
+            isDragged: true,
+            isVisibleLayer: true
+        });
+        console.log('+');
+    }
+
+    onDragEnter = (event) => {
+        if (this.state.isDragged) {
+            return;
+        }
+    }
+
+    onDragOver = (event) => {
+        event.preventDefault();
+    }
+
+
+    onDrag = (e) => {
+        const { shiftX, shiftY } = this.state;
+
+        if ((e.pageX - shiftX + this.$card.current.clientWidth) > window.innerWidth) {
+            this.$card.current.style.left = `${(window.innerWidth - this.$card.current.clientWidth) / window.innerWidth * 100}%`;
+        } else {
+            this.$card.current.style.left = `${(e.pageX - shiftX) / window.innerWidth * 100}%`;
+        }
+
+        if ((e.pageY - shiftY + this.$card.current.clientHeight) > window.innerHeight) {
+            this.$card.current.style.top = `${(window.innerHeight - this.$card.current.clientHeight) / window.innerHeight * 100}%`;
+        } else {
+            this.$card.current.style.top = `${(e.pageY - shiftY) / window.innerHeight * 100}%`;
+        }
+
+        if ((e.pageY - shiftY) <= 0) {
+            this.$card.current.style.top = 0;
+        }
+
+        if ((e.pageX - shiftX) <= 0) {
+            this.$card.current.style.left = 0;
+        }
+
+        this.$card.current.style.position = 'absolute';
+        this.$card.current.style.bottom = 'auto';
+        this.$card.current.style.right = 'auto';
+        document.body.appendChild(this.$card.current);
+
+        this.$card.current.style.zIndex = 1000;
+    }
+
+    onMouseDown = (e) => {
+        this.setState({
+            shiftX: e.pageX - this.$card.current.offsetLeft - 51,
+            shiftY: e.pageY - this.$card.current.offsetTop - 51
+        })
+    }
     render() {
         const { listName } = this.state;
+        const listId = this.props.listId;
 
         return (
             <div className='list-wrapper'>
-                <div onClick={this.openAddHeaderForm} className={this.classNames.list}>
+                <div
+                    className={this.classNames.listLayer}
+                    style={{
+                        height: this.$card.current ? this.$card.current.offsetHeight : 0,
+                        width: this.$card.current ? this.$card.current.offsetWidth : 0
+                    }}
+                />
+                <div
+                    ref={this.$card}
+                    onDrag={(e) => this.onDrag(e)}
+                    onDragOver={(e) => this.onDragOver(e)}
+                    onDragEnter={(e) => this.onDragEnter(e)}
+                    onDragStart={(e) => this.onDragStart(e)}
+                    onDrop={(e) => this.onDrop(e, 'complete')}
+                    onMouseDown={(e) => this.onMouseDown(e)}
+                    draggable
+                    onClick={this.openAddHeaderForm}
+                    className={this.classNames.list}
+                >
                     <div className='list__header'>
-                        <div onClick={this.changeNameList} className={this.classNames.listHeader}>{listName}</div>
+                        <div onClick={this.changeNameList} className={this.classNames.listName}>{listName}</div>
                         <textarea
                             onBlur={this.handleClickOutside}
                             onChange={this.resizeArea}
@@ -200,11 +328,13 @@ export default class List extends Component {
                             ref={this.textareaNameList}
                             defaultValue={listName}
                         />
-                        <div className={this.classNames.hiddenlistHeader}>
+                        <div className={this.classNames.hiddenlistName}>
                             <div ref={this.hiddenTextAreaNameList} className="textarea_behavior" id="list__header-textarea_hidden" />
                         </div>
                     </div>
-                    {this.renderCards()}
+                    <div className='cards-wrapper'>
+                        {this.renderCards()}
+                    </div>
                     <div onClick={this.cardAdd} className={this.classNames.addCard}>+ Добавить карточку</div>
                     <div className={this.classNames.addCardForm}>
                         <textarea
