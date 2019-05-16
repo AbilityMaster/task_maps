@@ -1,4 +1,4 @@
-.card {
+.card-name {
     margin-bottom: 8px;
     color: #172b4d;
     background-color: #fff;
@@ -14,4 +14,16 @@
         border-bottom-color: rgba(9,30,66,.25);
         background: f4f5f7;
     }
+    &__layer {
+        border-radius: 4px;
+        width: 100%;
+        padding: 6px 8px 2px;
+        background: rgba(9,30,66,.13);
+        z-index: -1;
+        display: none;
+        margin-bottom: 8px;
+        &_visible {
+            display: block;
+        }
+    } 
 }

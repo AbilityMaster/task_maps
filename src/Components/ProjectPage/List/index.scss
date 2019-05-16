@@ -6,7 +6,8 @@
     color: hsla(0,0%,100%,.8);
     width: 270px;
     border-radius: 4px;
-    position: relative;
+   // position: relative;
+    user-select: none;
     background: #dfe1e6;
     font-family: Helvetica Neue,Arial,Helvetica,sans-serif;
     font-size: 14px;
@@ -19,6 +20,7 @@
         background: rgba(9,30,66,.13);
         z-index: -1;
         display: none;
+        margin: 8px;
         &_visible {
             display: block;
         }

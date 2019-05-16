@@ -261,7 +261,8 @@ class App extends Component {
         const searchValue = event.target.value;
 
         for (let i = 0; i < dataLS.length; i++) {
-            if (dataLS[i].name.indexOf(searchValue) !== -1) {
+            const reg = new RegExp(searchValue, 'i');
+            if (reg.test(dataLS[i].name)) {
                 boards.push(dataLS[i]);
             }
         }

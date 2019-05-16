@@ -15,7 +15,8 @@ export default class ProjectPage extends Component {
             projectName: this.getprojectName(dataLS, projectId),
             isVisibleAddHeaderForm: false,
             isVisibleInputNameProject: false,
-            lists: this.getLists(dataLS, projectId)
+            lists: this.getLists(dataLS, projectId),
+            dragObject: {}
         }
         this.input = React.createRef();
         this.inputForNameProject = React.createRef();
@@ -90,6 +91,8 @@ export default class ProjectPage extends Component {
             name: listName,
             position: position
         });
+
+        console.log(lists);
         
         for (let i = 0; i < dataLS.length; i++) {
             if (dataLS[i].id === id) {
@@ -113,6 +116,8 @@ export default class ProjectPage extends Component {
         const { lists } = this.state;
         const id = this.props.match.params.id;
 
+        console.log(lists);
+
         return lists.map(value =>
             <List
                 key={value.id}
@@ -121,13 +126,28 @@ export default class ProjectPage extends Component {
                 name={value.name}
                 dropToEl={this.dropToEl}
                 lists={lists}
+                updateCards={this.updateCards}
+                updateLists={this.updateLists}
                 list={value}
+                cards={value.cards}
                 localStorage={this.localStorage}
             />
         );
     };
 
-    dropToEl = (data) => {
+    updateCards = (cards, listDrop) => {
+        let { lists } = this.state;
+
+        const index = lists.findIndex( listv => ( listv.id === listDrop.id));
+
+        lists[index].cards = cards;
+
+        this.setState({
+            lists
+        })
+    }
+
+    updateLists = (data) => {
         this.setState({
             lists: data
         })
@@ -211,38 +231,8 @@ export default class ProjectPage extends Component {
         }
     }
 
-    onDragOver = (ev) => {
-        ev.preventDefault();
-    }
-
     isEnteredToDropElement = (event) => {
         this.onDrop(event);
-    }
-
-    onDrop = (event, cat) => {
-        const id = this.props.match.params.id;
-        const dataLS = this.localStorage.dataset;
-        let listId = event.dataTransfer.getData('listId');
-        const { lists } = this.state;
-        let tempValue = '';
-
-        const project = dataLS.find( project => ( project.id === id ));
-        const listArr = project ? project.lists : [];
-        const list = listArr ? listArr.find( list => ( list.id === listId)) : [];
-        const listIndex = listArr ? listArr.findIndex( list => ( list.id === listId)) : [];
-
-        const listIndex2 = 1;
-
-        tempValue = lists[listIndex];
-        lists[listIndex] = lists[listIndex2];
-        lists[listIndex2] = tempValue;
-
-        console.log(event.target);
-
-        this.setState({
-            ...this.state,
-            lists
-        })
     }
 
     render() {
@@ -256,7 +246,7 @@ export default class ProjectPage extends Component {
                 </div>
                 <div className='project-board__body'>
                     {this.renderLists()}
-                    <div className='list-wrapper'>
+                    <div className='list-wrapper-1'>
                         <div onClick={this.openAddHeaderForm} className={this.classNames.addList}>
                             <div className={this.classNames.addListHeader}>+ Добавить список</div>
                             <div className={this.classNames.addListForm}>
