@@ -10,6 +10,9 @@
     min-height: 20px;
     padding: 6px 8px 2px;
     position: relative;
+    &_hidden {
+        display: none;
+    }
     &:hover {
         border-bottom-color: rgba(9,30,66,.25);
         background: f4f5f7;

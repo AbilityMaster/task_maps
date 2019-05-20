@@ -81,7 +81,7 @@ export default class ProjectPage extends Component {
         const dataLS = this.localStorage.dataset;
         const listName = this.input.current.value;
         const position = lists.length;
-
+        
         if (!listName) {
             return;
         }
@@ -91,8 +91,6 @@ export default class ProjectPage extends Component {
             name: listName,
             position: position
         });
-
-        console.log(lists);
         
         for (let i = 0; i < dataLS.length; i++) {
             if (dataLS[i].id === id) {
@@ -112,22 +110,74 @@ export default class ProjectPage extends Component {
         this.localStorage.dataset = dataLS;
     }
 
+    onMouseMove = (listId, card) => {
+        const { lists } = this.state;
+
+        const tempLists = JSON.parse(JSON.stringify(lists));
+        const list = tempLists.find( value => ( value.id === listId ));
+        const index = list.cards.findIndex( value => ( value.id === card.id ));
+        list.cards[index] = card;
+
+        this.setState({
+            lists: tempLists
+        });
+    }
+
+    addCardToList = (cards, listId) => {
+        const projects = this.localStorage.dataset;
+        const projectId = this.props.match.params.id;
+        const project = projects.find(project => (project.id === projectId));
+        const projectIndex = projects.findIndex(project => (project.id === projectId));
+        const list = project ? project.lists.find(list => (list.id === listId)) : '';
+        const listIndex = project ? project.lists.findIndex(list => (list.id === listId)) : 0;
+
+        projects[projectIndex].lists[listIndex].cards = cards;
+        this.localStorage.dataset = projects;
+
+        this.setState({
+            lists: project.lists
+        });
+    }
+
+    findList = (key) => {
+        const { lists } = this.state;
+
+        return lists.find( list => ( list.position === key )) || ''; 
+    }
+
+    updateCardNames = (cards, listId) => {
+        let lists = [];
+        const { lists: oldLists } = this.state;
+
+        lists = JSON.parse(JSON.stringify(oldLists));
+
+        const index = lists.findIndex( value => ( value.id === listId) );
+        
+        lists[index].cards = JSON.parse(JSON.stringify(cards));
+        
+        this.setState({
+            lists
+        });
+    }
+
     renderLists = () => {
         const { lists } = this.state;
         const id = this.props.match.params.id;
-
-        console.log(lists);
 
         return lists.map(value =>
             <List
                 key={value.id}
                 listId={value.id}
+                addCardToList={this.addCardToList}
                 projectId={id}
                 name={value.name}
+                findList={this.findList}
                 dropToEl={this.dropToEl}
                 lists={lists}
                 updateCards={this.updateCards}
+                updateCardNames={this.updateCardNames}
                 updateLists={this.updateLists}
+                onMouseMove={this.onMouseMove}
                 list={value}
                 cards={value.cards}
                 localStorage={this.localStorage}
@@ -236,7 +286,8 @@ export default class ProjectPage extends Component {
     }
 
     render() {
-        const { projectName } = this.state;
+        const { projectName, lists } = this.state;
+       //  console.log(lists);
 
         return (
             <div className='project-board' style={{ background: this.background }}>

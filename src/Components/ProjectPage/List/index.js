@@ -17,6 +17,8 @@ export default class List extends Component {
             isDropEl: false,
             isDropCard: false,
             isVisibleLayer: false,
+            historyDrags: [],
+            lastPos: '',
             shiftX: 0,
             shiftY: 0,
             oldPosition: {
@@ -29,13 +31,17 @@ export default class List extends Component {
         this.textareaCard = React.createRef();
         this.$card = React.createRef();
     }
- 
+    
+    shouldComponentUpdate(nextProps, nextState) {
+        return (JSON.parse(JSON.stringify(nextProps.list)) !== JSON.parse(JSON.stringify(this.props.list)))
+        return true;
+    }
 
     componentWillUnmount() {
         document.removeEventListener('mousemove', this.handleMouseMoveList)
         document.removeEventListener('mouseup', this.onMouseUp);
     }
-    
+
     cardAdd = () => {
         const { isVisibleAddCardForm } = this.state;
 
@@ -58,35 +64,35 @@ export default class List extends Component {
     };
 
     addCardToList = () => {
-        const { cards } = this.state;
+        //const { cards } = this.state;
+        const { addCardToList, list } = this.props;
+        let { cards } = this.props;
         const projectId = this.props.projectId;
         const listId = this.props.listId;
         const dataLS = this.localStorage.dataset;
         const cardName = this.textareaCard.current.value;
-        const position = cards.length;
+        const position = cards ? cards.length : 0;
+
+        if (!cards) {
+            cards = []
+        }
 
         if (!cardName) {
             return;
         }
 
-        const project = dataLS.find(project => (project.id === projectId));
-        const projectIndex = dataLS.findIndex(project => (project.id === projectId));
-        const list = project ? project.lists.find(list => (list.id === listId)) : '';
-        const listIndex = project ? project.lists.find(list => (list.id === listId)) : 0;
-
         cards.push({
             id: nanoid(4),
             text: cardName,
-            position: position
+            position: position,
+            isDrag: false
         });
 
-        list.cards = cards;
+        addCardToList(cards, list.id);
 
-        dataLS[projectIndex].lists[listIndex] = cards;
-        this.localStorage.dataset = dataLS;
 
         this.setState({
-            cards
+            ...this.state
         }, () => {
             this.textareaCard.current.value = '';
             this.textareaCard.current.focus();
@@ -194,27 +200,62 @@ export default class List extends Component {
         this.textareaNameList.current.style.overflow = 'hidden';
     };
 
-    renderCards = () => {      
-        const { cards } = this.state;
-        const { lists, list, updateCards } = this.props;
+    onMouseMove = (card) => {
+        const { onMouseMove, list } = this.props;
+      //  console.log(list);
 
-        return cards.map(value => (
-            <CardName
-                key={value.id}
-                card={value}
-                cardId={value.id}
-                updateCardNames={this.updateCardNames}
-                updateCards={updateCards}
-                cards={cards}
-                list={list}
-                lists={lists}
-                isDropCard={this.isDropCard}
-                text={value.text}
-            />
-        ));
+        onMouseMove(list.id, card);
+    }   
+
+    saveListPos = (data) => {
+    //    const { historyDrags } = this.state;
+     //   const { lastPos } = this.state;
+     //   historyDrags.push(data);
+
+        this.setState({
+     //       historyDrags,
+        lastPos: data
+            })
     };
 
-    updateCardNames = (data) => {   
+    getPositionLastDragged = () => {
+        const { lastPos } = this.state;
+
+        return lastPos;
+    }
+
+    renderCards() {
+        const { cards, lists, list, updateCards, updateCardNames, findList } = this.props;
+
+        //console.log('lists', list, cards);
+
+        if (cards) {
+            return cards.map(value => (
+                <CardName
+                    key={`${value.id}-${value.text}-${value.position}`}
+                    card={value}
+                    cardId={value.id}
+                    updateCardNames={updateCardNames}
+                    updateCards={updateCards}
+                    cards={cards}
+                    list={list}
+                    findList={findList}
+                    lists={lists}
+                    isDropCard={this.isDropCard}
+                    saveListPos={this.saveListPos}
+                    getPositionLastDragged={this.getPositionLastDragged}
+                    onMouseMove={this.onMouseMove}
+                    onChangeCard={(card) => {
+                        console.log(card, list)
+                        this.props.onChangeCard(list.id, card)
+                    }}
+                    text={value.text}
+                />
+            ));
+        }
+    };
+
+    updateCardNames = (data) => {
         this.setState({
             cards: data
         });
@@ -232,7 +273,7 @@ export default class List extends Component {
         });
     }
 
-    onMouseDown = (event) => {      
+    onMouseDown = (event) => {
         this.setState({
             cursor: {
                 x: event.pageX,
@@ -257,7 +298,7 @@ export default class List extends Component {
         const { updateLists, lists, list, listId } = this.props;
 
         this.setState({
-               isDrag: true
+            isDrag: true
         });
 
         if (!isDrag || isDropCard) {
@@ -312,7 +353,7 @@ export default class List extends Component {
         document.removeEventListener('mousemove', this.handleMouseMoveList)
         document.removeEventListener('mouseup', this.onMouseUp);
 
-       
+
 
         const dropEl = document.elementFromPoint(event.clientX, event.clientY);
         const dropElementUp = dropEl ? dropEl.closest('[droppable="droppable"]') : null;
@@ -345,7 +386,7 @@ export default class List extends Component {
         this.$card.current.style.transform = '';
         this.$card.current.style.zIndex = '';
 
-      //  updateLists(lists);
+        //  updateLists(lists);
     };
 
     onDragStart = () => {
@@ -355,7 +396,7 @@ export default class List extends Component {
     render() {
         const { list } = this.props;
         const { listName } = this.state;
-       
+
         return (
             <div className='list-wrapper'>
                 <div
@@ -368,7 +409,7 @@ export default class List extends Component {
                 <div
                     ref={this.$card}
                     onMouseDown={(event) => this.onMouseDown(event)}
-                    onMouseUp={(event) => this.onMouseUp(event)}                
+                    onMouseUp={(event) => this.onMouseUp(event)}
                     onClick={this.openAddHeaderForm}
                     className={this.classNames.list}
                     droppable="droppable"

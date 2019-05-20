@@ -1,34 +1,74 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import './index.scss';
 
 export default class Card extends Component {
+    static propTypes = {
+        card: PropTypes.object,
+        cardId: PropTypes.string,
+        updateCardNames: PropTypes.func,
+        updateCards: PropTypes.func,
+        cards: PropTypes.array,
+        list: PropTypes.object,
+        lists: PropTypes.array,
+        isDropCard: PropTypes.func,
+        onChangeCard: PropTypes.func,
+        text: PropTypes.string
+    };
+
+    static defaultProps = {
+        card: {},
+        cardId: '',
+        updateCardNames: () => { },
+        updateCards: () => { },
+        cards: [],
+        list: {},
+        lists: [],
+        isDropCard: () => { },
+        onChangeCard: () => { },
+        text: ''
+    };
+
     constructor(props) {
         super();
         this.state = {
-            cards: props.cards,
             isVisibleLayer: false,
             isdropMouseElement: false,
+            positionDraggedList: props.list.position,
             isDrag: false,
             dragObject: {},
             oldPosition: {},
             newPosition: {},
             layer: {
-                height: '',
-                width: ''
-            }            
+                height: 18,
+                width: 252
+            }
         }
         this.$layer = React.createRef();
         this.$cardName = React.createRef();
+        this.mouseMove = null;
+        this.mouseUp = null;
+    }
+
+
+    shouldComponentUpdate(nextProps, nextState) {
+        return (JSON.parse(JSON.stringify(nextProps.cards)) !== JSON.parse(JSON.stringify(this.props.cards)))
     }
 
     onMouseDown = (event) => {
+        let dragObject, layer;
+
+        if (!dragObject) {
+            dragObject = this.$cardName.current.cloneNode(true);
+            document.querySelector('.project-board__body').appendChild(dragObject);
+        }
 
         //const mouseDownElement = document.elementFromPoint(event.clientX, event.clientY);
         //  parentElement.style.pointerEvents = 'none';
         //  console.log(parentElement);
         let shiftX = event.pageX - this.$cardName.current.getBoundingClientRect().left + 8;
         let shilfY = event.pageY - this.$cardName.current.getBoundingClientRect().top + 59;
-
+        console.log('+');
         this.setState({
             shiftX,
             shilfY,
@@ -50,139 +90,149 @@ export default class Card extends Component {
             }
         });
 
-        document.addEventListener('mousemove', this.handleMouseMoveListValue);
-        document.addEventListener('mouseup', this.onMouseUp);
+        this.mouseMove = this.handleMouseMoveListValue.bind(this, dragObject);
+        this.mouseUp = this.onMouseUp.bind(this, dragObject);
+
+        document.addEventListener('mousemove', this.mouseMove);
+        document.addEventListener('mouseup', this.mouseUp);
     }
 
     componentWillUnmount() {
+        //console.log('componentWillUnmount', this.props.card);
         document.removeEventListener('mousemove', this.handleMouseMoveListValue);
         document.removeEventListener('mouseup', this.onMouseUp);
     }
 
-    handleMouseMoveListValue = (event) => {
-        const { isDropCard } = this.props;
-        const { shiftX, shilfY, layer, isDrag, cursor } = this.state;
+    handleMouseMoveListValue = (dragObject, event) => {
+        const { isDropCard, onMouseMove } = this.props;
+        const { shiftX, shilfY, layer, cursor } = this.state;
 
-        let dragObject;
+        if ((Math.abs(cursor.x - event.pageX) > 0) && (Math.abs(cursor.y - event.pageY) > 0)) {
+            const { cards, card, list, lists, updateCardNames, updateCards, findList } = this.props;
+            const cardDataDragged = card ? card : {};
 
-        this.setState({
-            isDrag: true
-        });
+            if (this.$cardName.current) {
+                dragObject.style.width = this.$cardName.current.offsetWidth + 'px';
+            }
 
-        if (!isDrag || !this.$cardName.current) {
-            return;
-        }
-
-        if ((Math.abs(cursor.x - event.pageX) > 3) && (Math.abs(cursor.y - event.pageY) > 3)) {
-
-            dragObject = this.$cardName.current;
-            
             const dropMouseElement = document.elementFromPoint(event.clientX, event.clientY);
 
             isDropCard(true);
-            this.setState({
-                isVisibleLayer: true
-            });
-            this.$cardName.current.style.userSelect = 'none';
-            this.$cardName.current.style.zIndex = 9999;
-            this.$cardName.current.style.position = 'absolute';
-            this.$cardName.current.style.left = `${event.pageX - shiftX}px`;
-            this.$cardName.current.style.top = `${event.pageY - shilfY}px`;
-            this.$cardName.current.style.transform = 'rotate(3deg)';
-            this.$cardName.current.style.pointerEvents = 'none';
+
+            dragObject.style.userSelect = 'none';
+            dragObject.style.zIndex = 9999;
+            dragObject.style.left = `${event.pageX - shiftX}px`;
+            dragObject.style.top = `${event.pageY - shilfY}px`;
+            dragObject.style.position = 'absolute';
+            dragObject.style.transform = 'rotate(3deg)';
+            dragObject.style.pointerEvents = 'none';
 
             if (!dropMouseElement) {
                 return;
             }
+
             // Для того чтобы детектить когда перетаскивый элемент не над самим листом, а над областью под ним
             const listWrapperDropped = dropMouseElement.closest('.list-wrapper');
-
-            if (listWrapperDropped) {
-                this.setState({
-                    listWrapperDropped,
-                    listDropped: null
-                });
-            }
             // Лист на который перетаскиваем
-            const listDropped = dropMouseElement.closest('[droppable="droppable"]');
-
-            if (listDropped) {
-                this.setState({
-                    listWrapperDropped: null,
-                    listDropped
-                });
-            }
-            // Находится ли перетаскиваемый элемент над картой
+            const $listDropped = dropMouseElement.closest('[droppable="droppable"]');
             const isCardDropped = dropMouseElement ? dropMouseElement.matches('[card="card"]') : null;
 
-            // Перетаскиваемый объект над областью под листом
-            if (listWrapperDropped && !listDropped) {
-                const list = listWrapperDropped.childNodes[1];
+            onMouseMove({ ...card, isDrag: true });
 
-                if (list) {
-                    const cardsWrapper = list.childNodes[1];
-                    cardsWrapper.appendChild(this.$layer.current);
-                    const coordsTargetElem = this.$layer.current.getBoundingClientRect();
-                    this.setState({
-                        newPosition: {
-                            x: coordsTargetElem.left,
-                            y: coordsTargetElem.top
-                        }
-                    });
-                }              
+            const { saveListPos } = this.props;
+
+            //    saveListPos(list.position);
+
+            if ($listDropped) {
+                const { findList } = this.props;
+
+                const positionListDropped = parseFloat($listDropped.dataset.position);
+                const listDropped = findList(positionListDropped);
+                //const listDropped = lists.find(list => (list.position === positionListDropped));
+                const cardsDropped = listDropped.cards;
+                const cardTemp = card;
+                const indexForRemove = cardsDropped.findIndex(card => (card.id === cardTemp.id));
+
+                if (isCardDropped) {
+                    const { saveListPos, getPositionLastDragged } = this.props;
+                    const $cardDropped = dropMouseElement.closest('[card="card"]');
+
+                    const lastSeen = getPositionLastDragged() !== '' ? getPositionLastDragged() : list.position;
+
+                    if (lastSeen !== positionListDropped) {
+                        // const removeList = lists.find(list => (list.position === lastSeen));
+                        const removeList = findList(lastSeen);
+                        const removeCards = removeList.cards;
+                        const removeIndex = removeCards.findIndex(item => (item.isDrag === true));
+
+                        removeCards.splice(removeIndex, 1);
+                        updateCardNames(removeCards, removeList.id);
+                    }
+
+                    if (!$cardDropped) {
+                        return;
+                    }
+
+                    const position = parseFloat($cardDropped.dataset.position);
+                    const indexForInsert = cardsDropped.findIndex(value => (value.position === position));
+                    const isExistsDraggedinDropped = cardsDropped.find(card => (card.id === cardTemp.id));
+
+                    cardTemp.position = cardsDropped.length;
+                    saveListPos(positionListDropped);
+
+                    if (isExistsDraggedinDropped) {
+
+                        cardsDropped.splice(indexForRemove, 1);
+                        cardsDropped.splice(indexForInsert, 0, cardTemp);
+                        updateCardNames(cardsDropped, listDropped.id);
+
+                        return;
+                    }
+
+                    cardsDropped.splice(indexForInsert, 0, cardTemp);
+                    updateCardNames(cardsDropped, listDropped.id);
+                }
             }
+
+
+            // Перетаскиваемый объект над областью под листом
+            /*    if (listWrapperDropped && !listDropped) {
+                    const cardDropped = dropMouseElement.closest('[card="card"]');
+                    const positionCardDropped = parseFloat(cardDropped.dataset.position);
+                    const cardDataDropped = cards.find(value => (value.position === positionCardDropped));
+                    const indexForInsert = cards.length;
+                    const indexForRemove = cards.findIndex(value => (value.position === cardDataDragged.position));
+                    
+                    cards.splice(indexForRemove, 1);
+                    cards.splice(indexForInsert, 0, cardDataDragged);      
+                } */
 
             // Перетаскиваемый объект попал над карту
-            if (isCardDropped) {
-                const cardDropped = dropMouseElement.closest('[card="card"]');
-                const cardsWrapper = cardDropped.parentNode;
-                const coords = cardDropped.getBoundingClientRect();
 
-                if (cardDropped) {
-                    this.setState({
-                        cardDropped,
-                        isWasCardDropped: true
-                    });
-                }
-
-                if (Math.abs(event.pageY - coords.top) > Math.abs(coords.top - coords.bottom) / 1.2) {
-                    return;
-                }
-
-
-                
-                cardsWrapper.insertBefore(this.$layer.current, cardDropped);
-                const coordsTargetElem = this.$layer.current.getBoundingClientRect();
-
-                this.setState({
-                    newPosition: {
-                        x: coordsTargetElem.left,
-                        y: coordsTargetElem.top
-                    }
-                });
-            }
-
-            if (this.$cardName.current) {
-                this.$cardName.current.style.height = `${layer.height}px`;
-                this.$cardName.current.style.width = `${layer.width}px`;
+            if (dragObject) {
+                dragObject.style.height = `${layer.height}px`;
+                dragObject.style.width = `${layer.width}px`;
             }
         }
 
         return false;
     };
 
-    onMouseUp = (event) => {
+    onMouseUp = (dragObject, event) => {
         const { isDropCard } = this.props;
         const { oldPosition, newPosition, isWasCardDropped, cardDropped, listWrapperDropped, listDropped } = this.state;
+
+        // document.querySelector('.project-board__body').removeChild(dragObject);
 
         if (!this.$cardName.current) {
             return;
         }
 
+
         isDropCard(false);
 
-        document.removeEventListener('mousemove', this.handleMouseMoveListValue);
-        document.removeEventListener('mouseup', this.onMouseUp);
+        document.removeEventListener('mousemove', this.mouseMove);
+        document.removeEventListener('mouseup', this.mouseUp);
 
         this.$cardName.current.style.pointerEvents = 'none';
 
@@ -202,15 +252,15 @@ export default class Card extends Component {
             const indexForInsert = cardsDrop ? cardsDrop.length : 0;
             cardsWrapper.removeChild(this.$layer.current);
             card.position = cardsDrop ? cardsDrop.length : 0;
-            
+
             const existsElementDropped = cardsDrop ? cardsDrop.find(value => (value.id === cardId)) : null;
 
             if (existsElementDropped && (cards === cardsDrop)) {
-                 // Вставляем элемент в новый список
-                 cards.splice(indexForInsert, 0, card);                 
-                 cards.splice(indexStart, 1);
-                 
-                 updateCardNames(cards);
+                // Вставляем элемент в новый список
+                cards.splice(indexForInsert, 0, card);
+                cards.splice(indexStart, 1);
+
+                updateCardNames(cards);
             }
 
             if (existsElementDropped && (cards !== cardsDrop)) {
@@ -220,9 +270,9 @@ export default class Card extends Component {
                     this.setState({
                         isdropMouseElement: false
                     });
-                }                
-            } 
-            
+                }
+            }
+
             if (!existsElementDropped) {
                 // Вставляем элемент в новый список
                 if (!cardsDrop) {
@@ -334,26 +384,32 @@ export default class Card extends Component {
     }
 
     get classNames() {
-        const { isVisibleLayer } = this.state;
+        const { card } = this.props;
+        //const { isVisibleLayer } = this.state;
         const classNames = {
-            layer: ['card-name__layer']
+            layer: ['card-name__layer'],
+            card: ['card-name']
         }
 
-        if (isVisibleLayer) {
-            classNames.layer.push('card-name__layer_visible')
+        if (card.isDrag) {
+            classNames.layer.push('card-name__layer_visible');
+            classNames.card.push('card-name_hidden');
         }
 
         return {
-            layer: classNames.layer.join(' ')
+            layer: classNames.layer.join(' '),
+            card: classNames.card.join(' ')
         }
     }
 
-    render() {
-        const { text, card } = this.props;
+    renderBody() {
         const { layer } = this.state;
+        const { text, card } = this.props;
 
-        return (
-            <div className='card-wrapper'>
+        //  console.warn(card.text, card)
+
+        if (card.isDrag) {
+            return (
                 <div className={this.classNames.layer}
                     style={{
                         height: `${layer.height}px`,
@@ -361,16 +417,27 @@ export default class Card extends Component {
                     }}
                     ref={this.$layer}
                 />
-                <div
-                    card='card'
-                    className='card-name'
-                    onMouseDown={this.onMouseDown}
-                    onMouseUp={this.onMouseUp}
-                    ref={this.$cardName}
-                    data-position={card.position}
-                >
-                    {text}
-                </div>
+            )
+        }
+
+        return (
+            <div
+                card='card'
+                className={this.classNames.card}
+                onMouseDown={this.onMouseDown}
+                onMouseUp={this.onMouseUp}
+                ref={this.$cardName}
+                data-position={card.position}
+            >
+                {text}
+            </div>
+        )
+    }
+
+    render() {
+        return (
+            <div className='card-wrapper'>
+                {this.renderBody()}
             </div>
         )
     }
