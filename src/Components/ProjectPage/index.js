@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import nanoid from 'nanoid';
-import { DEFAULT_COLOR } from '../const';
+import { DEFAULT_COLOR, TYPE_SEARCH, MESSAGES } from '../const';
 import List from './List';
 import './index.scss';
 
@@ -15,7 +15,7 @@ export default class ProjectPage extends Component {
             projectName: this.getprojectName(dataLS, projectId),
             isVisibleAddHeaderForm: false,
             isVisibleInputNameProject: false,
-            lists: this.getLists(dataLS, projectId),
+            lists: this.loadLists(dataLS, projectId),
             dragObject: {}
         }
         this.input = React.createRef();
@@ -38,13 +38,13 @@ export default class ProjectPage extends Component {
     };
 
     getprojectName = (dataLS, id) => {
-        const project = dataLS.find( project => project.id === id);
+        const project = dataLS.find(project => project.id === id);
 
         return project.name || '';
     }
 
-    getLists = (dataLS, id) => {
-        const project = dataLS.find( project => project.id === id);
+    loadLists = (dataLS, id) => {
+        const project = dataLS.find(project => project.id === id);
 
         return project.lists || [];
     }
@@ -52,9 +52,9 @@ export default class ProjectPage extends Component {
     get background() {
         const dataLS = this.localStorage.dataset;
         const id = this.props.match.params.id;
-        const project = dataLS.find( project => ( project.id === id));
+        const project = dataLS.find(project => (project.id === id));
 
-        return project.background || DEFAULT_COLOR; 
+        return project.background || DEFAULT_COLOR;
     };
 
     openAddHeaderForm = () => {
@@ -81,7 +81,7 @@ export default class ProjectPage extends Component {
         const dataLS = this.localStorage.dataset;
         const listName = this.input.current.value;
         const position = lists.length;
-        
+
         if (!listName) {
             return;
         }
@@ -91,7 +91,7 @@ export default class ProjectPage extends Component {
             name: listName,
             position: position
         });
-        
+
         for (let i = 0; i < dataLS.length; i++) {
             if (dataLS[i].id === id) {
                 dataLS[i].lists = lists;
@@ -114,8 +114,8 @@ export default class ProjectPage extends Component {
         const { lists } = this.state;
 
         const tempLists = JSON.parse(JSON.stringify(lists));
-        const list = tempLists.find( value => ( value.id === listId ));
-        const index = list.cards.findIndex( value => ( value.id === card.id ));
+        const list = tempLists.find(value => (value.id === listId));
+        const index = list.cards.findIndex(value => (value.id === card.id));
         list.cards[index] = card;
 
         this.setState({
@@ -128,7 +128,6 @@ export default class ProjectPage extends Component {
         const projectId = this.props.match.params.id;
         const project = projects.find(project => (project.id === projectId));
         const projectIndex = projects.findIndex(project => (project.id === projectId));
-        const list = project ? project.lists.find(list => (list.id === listId)) : '';
         const listIndex = project ? project.lists.findIndex(list => (list.id === listId)) : 0;
 
         projects[projectIndex].lists[listIndex].cards = cards;
@@ -139,10 +138,41 @@ export default class ProjectPage extends Component {
         });
     }
 
+    findListIndex = (searchType, arg) => {
+        const { lists } = this.state;
+
+        switch (searchType) {
+            case TYPE_SEARCH.BY_ID: {
+                return lists.findIndex(list => (list.id === arg));
+            }
+            case TYPE_SEARCH.BY_POSITION: {
+                return lists.findIndex(list => (list.position === arg));
+            }
+            default:
+                console.log(MESSAGES.ERROR.TYPE_FIND);
+                break;
+        }
+    }
+
     findList = (key) => {
         const { lists } = this.state;
 
-        return lists.find( list => ( list.position === key )) || ''; 
+        return lists.find(list => (list.position === key)) || '';
+    }
+
+    unsetDrag = (listPosition, cardId) => {
+        const { lists } = this.state;
+
+        const tempLists = JSON.parse(JSON.stringify(lists));
+
+        const list = tempLists.find(list => (list.position === listPosition));
+        const cards = list ? list.cards : [];
+        const card = cards ? cards.find(card => (card.id === cardId)) : {};
+        card.isDrag = false;
+
+        this.setState({
+            lists: tempLists
+        });
     }
 
     updateCardNames = (cards, listId) => {
@@ -151,12 +181,30 @@ export default class ProjectPage extends Component {
 
         lists = JSON.parse(JSON.stringify(oldLists));
 
-        const index = lists.findIndex( value => ( value.id === listId) );
-        
+        const index = lists.findIndex(value => (value.id === listId));
+
         lists[index].cards = JSON.parse(JSON.stringify(cards));
-        
+
         this.setState({
             lists
+        });
+    }
+
+    getLists = () => {
+        const { lists } = this.state;
+
+        return lists;
+    };
+
+    updateCardName = (list) => {
+        const { lists } = this.state;
+
+        const tempLists = JSON.parse(JSON.stringify(lists));
+        const listIndex = tempLists.findIndex( value => ( value.id === list.id ));
+        tempLists[listIndex] = list;
+
+        this.setState({
+            lists: tempLists
         });
     }
 
@@ -167,41 +215,41 @@ export default class ProjectPage extends Component {
         return lists.map(value =>
             <List
                 key={value.id}
-                listId={value.id}
-                addCardToList={this.addCardToList}
                 projectId={id}
-                name={value.name}
-                findList={this.findList}
-                dropToEl={this.dropToEl}
-                lists={lists}
-                updateCards={this.updateCards}
-                updateCardNames={this.updateCardNames}
-                updateLists={this.updateLists}
-                onMouseMove={this.onMouseMove}
                 list={value}
                 cards={value.cards}
+                addCardToList={this.addCardToList}
+                findList={this.findList}
+                updateCardNames={this.updateCardNames}
+                updateLists={this.updateLists}
+                findListIndex={this.findListIndex}
+                onMouseMove={this.onMouseMove}
+                unsetDrag={this.unsetDrag}
+                getLists={this.getLists}
+                changeListName={this.changeListName}
+                updateCardName={this.updateCardName}
                 localStorage={this.localStorage}
             />
         );
     };
 
-    updateCards = (cards, listDrop) => {
-        let { lists } = this.state;
+    changeListName = (list) => {
+        const { lists } = this.state;
 
-        const index = lists.findIndex( listv => ( listv.id === listDrop.id));
-
-        lists[index].cards = cards;
+        const tempLists = JSON.parse(JSON.stringify(lists));
+        const tempList = tempLists.find(value => (value.id === list.id));
+        tempList.name = list.name;
 
         this.setState({
-            lists
-        })
-    }
+            lists: tempLists
+        });
+    };
 
     updateLists = (data) => {
         this.setState({
             lists: data
-        })
-    }
+        });
+    };
 
     componentWillUnmount() {
         document.removeEventListener('click', this.handleClickOutside, false);
@@ -248,7 +296,7 @@ export default class ProjectPage extends Component {
 
         this.localStorage.dataset = dataLS;
         this.changeNameOfProject();
-    }
+    };
 
     get classNames() {
         const { isVisibleAddHeaderForm, isVisibleInputNameProject } = this.state;
@@ -281,13 +329,8 @@ export default class ProjectPage extends Component {
         }
     }
 
-    isEnteredToDropElement = (event) => {
-        this.onDrop(event);
-    }
-
     render() {
-        const { projectName, lists } = this.state;
-       //  console.log(lists);
+        const { projectName } = this.state;
 
         return (
             <div className='project-board' style={{ background: this.background }}>
@@ -297,7 +340,7 @@ export default class ProjectPage extends Component {
                 </div>
                 <div className='project-board__body'>
                     {this.renderLists()}
-                    <div className='list-wrapper-1'>
+                    <div className='list-wrapper-adding'>
                         <div onClick={this.openAddHeaderForm} className={this.classNames.addList}>
                             <div className={this.classNames.addListHeader}>+ Добавить список</div>
                             <div className={this.classNames.addListForm}>

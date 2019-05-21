@@ -161,3 +161,29 @@ body {
 .form-container {
     display: flex;
 }
+
+::-webkit-scrollbar { 
+    height: 15px;
+}
+::-webkit-scrollbar-button {  
+    height: 10px;
+}
+::-webkit-scrollbar-track {  
+    background-color: yellow;
+    height: 10px;
+}
+::-webkit-scrollbar-track-piece { 
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 103, 163, 1);
+    height: 10px;
+}
+::-webkit-scrollbar-thumb { 
+    height: 50px;
+    background-color: rgba(255, 255, 255, 0.45);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-corner { background-color: #999;}
+::-webkit-resizer {
+    background-color: red;
+}

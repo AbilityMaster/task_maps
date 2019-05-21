@@ -5,80 +5,65 @@ import './index.scss';
 export default class Card extends Component {
     static propTypes = {
         card: PropTypes.object,
-        cardId: PropTypes.string,
         updateCardNames: PropTypes.func,
-        updateCards: PropTypes.func,
-        cards: PropTypes.array,
-        list: PropTypes.object,
-        lists: PropTypes.array,
+        findList: PropTypes.func,
+        getListId: PropTypes.func,
         isDropCard: PropTypes.func,
-        onChangeCard: PropTypes.func,
-        text: PropTypes.string
+        saveListPos: PropTypes.func,
+        getPositionLastDragged: PropTypes.func,
+        unsetDrag: PropTypes.func,
+        onMouseMove: PropTypes.func
     };
 
     static defaultProps = {
         card: {},
-        cardId: '',
         updateCardNames: () => { },
-        updateCards: () => { },
-        cards: [],
-        list: {},
-        lists: [],
+        findList: () => { },
+        getListId: () => { },
         isDropCard: () => { },
-        onChangeCard: () => { },
-        text: ''
+        saveListPos: () => { },
+        getPositionLastDragged: () => { },
+        unsetDrag: () => { },
+        onMouseMove: () => { }
     };
 
-    constructor(props) {
+    constructor() {
         super();
         this.state = {
-            isVisibleLayer: false,
-            isdropMouseElement: false,
-            positionDraggedList: props.list.position,
-            isDrag: false,
-            dragObject: {},
-            oldPosition: {},
-            newPosition: {},
             layer: {
                 height: 18,
                 width: 252
-            }
+            },
+            isVisibleQuickEditor: false
         }
         this.$layer = React.createRef();
         this.$cardName = React.createRef();
+        this.$cardNameChange = React.createRef();
         this.mouseMove = null;
         this.mouseUp = null;
     }
 
-
-    shouldComponentUpdate(nextProps, nextState) {
-        return (JSON.parse(JSON.stringify(nextProps.cards)) !== JSON.parse(JSON.stringify(this.props.cards)))
-    }
-
     onMouseDown = (event) => {
-        let dragObject, layer;
+        let dragObject;
+        console.log(dragObject);
 
         if (!dragObject) {
             dragObject = this.$cardName.current.cloneNode(true);
+            dragObject.style.display = 'none';
             document.querySelector('.project-board__body').appendChild(dragObject);
         }
 
-        //const mouseDownElement = document.elementFromPoint(event.clientX, event.clientY);
-        //  parentElement.style.pointerEvents = 'none';
-        //  console.log(parentElement);
-        let shiftX = event.pageX - this.$cardName.current.getBoundingClientRect().left + 8;
-        let shilfY = event.pageY - this.$cardName.current.getBoundingClientRect().top + 59;
-        console.log('+');
+        console.log(dragObject);
+
+        const shiftX = event.pageX - this.$cardName.current.getBoundingClientRect().left + 8;
+        const shiftY = event.pageY - this.$cardName.current.getBoundingClientRect().top + 59;
+
         this.setState({
             shiftX,
-            shilfY,
+            shiftY,
             cursor: {
                 x: event.pageX,
                 y: event.pageY
-            },
-            oldPosition: {
-                x: 0,
-                y: this.$cardName.current.getBoundingClientRect().top
             },
             layer: {
                 height: this.$cardName.current.offsetHeight -
@@ -98,18 +83,16 @@ export default class Card extends Component {
     }
 
     componentWillUnmount() {
-        //console.log('componentWillUnmount', this.props.card);
         document.removeEventListener('mousemove', this.handleMouseMoveListValue);
         document.removeEventListener('mouseup', this.onMouseUp);
     }
 
     handleMouseMoveListValue = (dragObject, event) => {
-        const { isDropCard, onMouseMove } = this.props;
-        const { shiftX, shilfY, layer, cursor } = this.state;
+        const { isDropCard, onMouseMove, saveListPos, findList, getListId } = this.props;
+        const { shiftX, shiftY, layer, cursor } = this.state;
 
-        if ((Math.abs(cursor.x - event.pageX) > 0) && (Math.abs(cursor.y - event.pageY) > 0)) {
-            const { cards, card, list, lists, updateCardNames, updateCards, findList } = this.props;
-            const cardDataDragged = card ? card : {};
+        if ((Math.abs(cursor.x - event.pageX) > 2) && (Math.abs(cursor.y - event.pageY) > 2)) {
+            const { card, updateCardNames } = this.props;
 
             if (this.$cardName.current) {
                 dragObject.style.width = this.$cardName.current.offsetWidth + 'px';
@@ -119,10 +102,11 @@ export default class Card extends Component {
 
             isDropCard(true);
 
+            dragObject.style.display = 'block';
             dragObject.style.userSelect = 'none';
             dragObject.style.zIndex = 9999;
             dragObject.style.left = `${event.pageX - shiftX}px`;
-            dragObject.style.top = `${event.pageY - shilfY}px`;
+            dragObject.style.top = `${event.pageY - shiftY}px`;
             dragObject.style.position = 'absolute';
             dragObject.style.transform = 'rotate(3deg)';
             dragObject.style.pointerEvents = 'none';
@@ -131,43 +115,33 @@ export default class Card extends Component {
                 return;
             }
 
-            // Для того чтобы детектить когда перетаскивый элемент не над самим листом, а над областью под ним
-            const listWrapperDropped = dropMouseElement.closest('.list-wrapper');
-            // Лист на который перетаскиваем
+            const $listWrapperDropped = dropMouseElement.closest('.list-wrapper');
             const $listDropped = dropMouseElement.closest('[droppable="droppable"]');
             const isCardDropped = dropMouseElement ? dropMouseElement.matches('[card="card"]') : null;
 
             onMouseMove({ ...card, isDrag: true });
 
-            const { saveListPos } = this.props;
-
-            //    saveListPos(list.position);
-
             if ($listDropped) {
-                const { findList } = this.props;
-
                 const positionListDropped = parseFloat($listDropped.dataset.position);
                 const listDropped = findList(positionListDropped);
-                //const listDropped = lists.find(list => (list.position === positionListDropped));
                 const cardsDropped = listDropped.cards;
                 const cardTemp = card;
+
+                if (!listDropped.cards) {
+                    listDropped.cards = [];
+                    listDropped.cards.push(card);
+                    updateCardNames(listDropped.cards, listDropped.id);
+                    this.updateDraggLayer(positionListDropped);
+
+                    return;
+                }
+
                 const indexForRemove = cardsDropped.findIndex(card => (card.id === cardTemp.id));
 
                 if (isCardDropped) {
-                    const { saveListPos, getPositionLastDragged } = this.props;
                     const $cardDropped = dropMouseElement.closest('[card="card"]');
 
-                    const lastSeen = getPositionLastDragged() !== '' ? getPositionLastDragged() : list.position;
-
-                    if (lastSeen !== positionListDropped) {
-                        // const removeList = lists.find(list => (list.position === lastSeen));
-                        const removeList = findList(lastSeen);
-                        const removeCards = removeList.cards;
-                        const removeIndex = removeCards.findIndex(item => (item.isDrag === true));
-
-                        removeCards.splice(removeIndex, 1);
-                        updateCardNames(removeCards, removeList.id);
-                    }
+                    this.updateDraggLayer(positionListDropped);
 
                     if (!$cardDropped) {
                         return;
@@ -176,12 +150,15 @@ export default class Card extends Component {
                     const position = parseFloat($cardDropped.dataset.position);
                     const indexForInsert = cardsDropped.findIndex(value => (value.position === position));
                     const isExistsDraggedinDropped = cardsDropped.find(card => (card.id === cardTemp.id));
+                    const listIdDragged = getListId(card.id);
 
-                    cardTemp.position = cardsDropped.length;
+                    if (listIdDragged !== listDropped.id) {
+                        cardTemp.position = cardsDropped.length;
+                    }
+
                     saveListPos(positionListDropped);
 
                     if (isExistsDraggedinDropped) {
-
                         cardsDropped.splice(indexForRemove, 1);
                         cardsDropped.splice(indexForInsert, 0, cardTemp);
                         updateCardNames(cardsDropped, listDropped.id);
@@ -194,20 +171,24 @@ export default class Card extends Component {
                 }
             }
 
+            if ($listWrapperDropped && !$listDropped) {
+                const $list = $listWrapperDropped.children[1];
+                const position = parseFloat($list.dataset.position);
+                const listDropped = findList(position);
+                const cardsDropped = listDropped.cards ? listDropped.cards : [];
+                const existItem = cardsDropped.find(value => (value.id === card.id));
 
-            // Перетаскиваемый объект над областью под листом
-            /*    if (listWrapperDropped && !listDropped) {
-                    const cardDropped = dropMouseElement.closest('[card="card"]');
-                    const positionCardDropped = parseFloat(cardDropped.dataset.position);
-                    const cardDataDropped = cards.find(value => (value.position === positionCardDropped));
-                    const indexForInsert = cards.length;
-                    const indexForRemove = cards.findIndex(value => (value.position === cardDataDragged.position));
-                    
-                    cards.splice(indexForRemove, 1);
-                    cards.splice(indexForInsert, 0, cardDataDragged);      
-                } */
+                card.position = cardsDropped.length;
+                this.updateDraggLayer(position);
+                saveListPos(position);
 
-            // Перетаскиваемый объект попал над карту
+                if (existItem) {
+                    return;
+                }
+
+                cardsDropped.push(card);
+                updateCardNames(cardsDropped, listDropped.id);
+            }
 
             if (dragObject) {
                 dragObject.style.height = `${layer.height}px`;
@@ -218,174 +199,72 @@ export default class Card extends Component {
         return false;
     };
 
-    onMouseUp = (dragObject, event) => {
-        const { isDropCard } = this.props;
-        const { oldPosition, newPosition, isWasCardDropped, cardDropped, listWrapperDropped, listDropped } = this.state;
+    updateDraggLayer = (positionListDropped) => {
+        const { getPositionLastDragged, findList, updateCardNames } = this.props;
 
-        // document.querySelector('.project-board__body').removeChild(dragObject);
+        const positionLastDragged = getPositionLastDragged();
 
-        if (!this.$cardName.current) {
-            return;
+        if (positionLastDragged !== positionListDropped) {
+            const removeList = findList(positionLastDragged);
+            const removeCards = removeList.cards;
+            const removeIndex = removeCards.findIndex(item => (item.isDrag === true));
+
+            removeCards.splice(removeIndex, 1);
+            updateCardNames(removeCards, removeList.id);
         }
+    }
 
-
-        isDropCard(false);
+    onMouseUp = (dragObject, event) => {
+        const { isDropCard, saveListPos, card, unsetDrag, getPositionLastDragged } = this.props;
 
         document.removeEventListener('mousemove', this.mouseMove);
         document.removeEventListener('mouseup', this.mouseUp);
 
-        this.$cardName.current.style.pointerEvents = 'none';
-
-        if (listWrapperDropped && !listDropped) {
-            const { updateCardNames, lists, cardId, card, updateCards } = this.props;
-            let { cards } = this.props;
-            const listWrapper = listWrapperDropped.children[1]
-            const cardsWrapper = listWrapper.children[1];
-            const positionListDropped = parseFloat(listWrapperDropped.children[1].dataset.position);
-            // Лист на который перетаскиваем элемент       
-            const listDrop = lists.find(list => (list.position === positionListDropped));
-            // Элементы листа, на который перетаскиваем
-            let cardsDrop = listDrop.cards;
-            // индекс перетаскиваемого элемента в массиве
-            const indexStart = cards.findIndex(cards => (cards.id === cardId));
-            // Индекс, для вставки в новое место
-            const indexForInsert = cardsDrop ? cardsDrop.length : 0;
-            cardsWrapper.removeChild(this.$layer.current);
-            card.position = cardsDrop ? cardsDrop.length : 0;
-
-            const existsElementDropped = cardsDrop ? cardsDrop.find(value => (value.id === cardId)) : null;
-
-            if (existsElementDropped && (cards === cardsDrop)) {
-                // Вставляем элемент в новый список
-                cards.splice(indexForInsert, 0, card);
-                cards.splice(indexStart, 1);
-
-                updateCardNames(cards);
-            }
-
-            if (existsElementDropped && (cards !== cardsDrop)) {
-                if (this.$cardName.current) {
-                    this.$cardName.current.style.left = `${oldPosition.x}px`;
-                    this.$cardName.current.style.top = `${oldPosition.y}px`;
-                    this.setState({
-                        isdropMouseElement: false
-                    });
-                }
-            }
-
-            if (!existsElementDropped) {
-                // Вставляем элемент в новый список
-                if (!cardsDrop) {
-                    cardsDrop = [];
-                    cardsDrop.push(card);
-                    console.log(listDrop);
-                    updateCards(cardsDrop, listDrop);
-                } else {
-                    cardsDrop.splice(indexForInsert, 0, card);
-                    updateCards(cardsDrop, listDrop);
-                }
-                // Удаляем элемент из старого списка
-                cards.splice(indexStart, 1);
-                updateCardNames(cards);
-            }
+        if (!dragObject) {
+            return;
         }
 
-        // Если мышь отпускается над листом и курсор мыши был наведен на карту
-        if (isWasCardDropped && listDropped) {
-            const { updateCardNames, list, lists, cardId, card, updateCards } = this.props;
-            let { cards } = this.props;
+        isDropCard(false);
 
-            if (this.$cardName.current) {
-                this.$cardName.current.style.left = `${oldPosition.x}px`;
-                this.$cardName.current.style.top = `${newPosition.y}px`;
-            }
+        // при нажатии вы
+        console.log(dragObject);
+        dragObject.style.pointerEvents = 'none';
 
-            const positionListDropped = parseFloat(listDropped.dataset.position);
+        const dropMouseElement = document.elementFromPoint(event.clientX, event.clientY);
+        const $listWrapperDropped = dropMouseElement ? dropMouseElement.closest('.list-wrapper') : null;
+        const $listDropped = dropMouseElement ? dropMouseElement.closest('[droppable="droppable"]') : null;
 
-            // Если изменился лист при перетаскивании
-            if (list.position !== positionListDropped) {
-                const parentElement = this.$layer.current.parentNode;
-                // Лист на который перетаскиваем элемент       
-                const listDrop = lists.find(list => (list.position === positionListDropped));
-                // Элементы листа, на который перетаскиваем
-                const cardsDrop = listDrop.cards;
-                // индекс перетаскиваемого элемента в массиве
-                const indexStart = cards.findIndex(cards => (cards.id === cardId));
-                // Индекс, для вставки в новое место
-                const position = parseFloat(cardDropped.dataset.position);
-                const indexForInsert = cardsDrop.findIndex(value => (value.position === position));
-
-                this.setState({
-                    isdropMouseElement: true,
-                    newPosition: {
-                        x: this.$layer.current.getBoundingClientRect().left,
-                        y: this.$layer.current.getBoundingClientRect().top
-                    }
-                });
-
-                const search = cardsDrop.find(value => (value.id === card.id))
-
-                if (search) {
-                    return;
-                }
-
-                parentElement.removeChild(this.$layer.current);
-                // Изменяем атрибут position для исключения совпадения в новом листе
-                card.position = cardsDrop.length;
-                // Вставляем элемент в новый список
-                cardsDrop.splice(indexForInsert, 0, card);
-                updateCards(cardsDrop, listDrop);
-
-                // Удаляем элемент из старого списка
-                cards.splice(indexStart, 1);
-                updateCardNames(cards);
-            } else {
-                const indexStart = cards.findIndex(cards => (cards.id === cardId));
-                const position = parseFloat(cardDropped.dataset.position);
-                const indexEnd = cards.findIndex(list => (list.position === position));
-
-                this.setState({
-                    isdropMouseElement: true,
-                    newPosition: {
-                        x: this.$layer.current.getBoundingClientRect().left,
-                        y: this.$layer.current.getBoundingClientRect().top
-                    }
-                });
-
-                // Вставляем блок тени в новое место
-                this.$cardName.current.parentNode.insertBefore(this.$layer.current, this.$cardName.current);
-                cards.splice(indexStart, 1);
-                cards.splice(indexEnd, 0, card);
-                updateCardNames(cards);
-            }
-        } else {
-            if (this.$cardName.current) {
-                this.$cardName.current.style.left = `${oldPosition.x}px`;
-                this.$cardName.current.style.top = `${oldPosition.y}px`;
-                this.setState({
-                    isdropMouseElement: false
-                });
-            }
+        if ($listDropped) {
+            const positionListDropped = parseFloat($listDropped.dataset.position);
+            unsetDrag(positionListDropped, card.id);
         }
 
-        if (this.$cardName.current) {
-            this.$cardName.current.style.position = '';
-            this.$cardName.current.style.width = '';
-            this.$cardName.current.style.top = '';
-            this.$cardName.current.style.transform = '';
-            this.$cardName.current.style.pointerEvents = 'auto';
-            this.$cardName.current.style.zIndex = 1;
+        if ($listWrapperDropped) {
+            const $list = $listWrapperDropped.children[1];
+            const positionListDropped = parseFloat($list.dataset.position);
+            unsetDrag(positionListDropped, card.id);
         }
 
-        this.setState({
-            isVisibleLayer: false,
-            isDrag: false
-        });
+        if (!$listDropped && !$listWrapperDropped) {
+            const positionListDropped = getPositionLastDragged();
+            unsetDrag(positionListDropped, card.id);
+        }
+
+        saveListPos('');
+
+        if (dragObject) {
+            dragObject.style.position = '';
+            dragObject.style.width = '';
+            dragObject.style.top = '';
+            dragObject.style.transform = '';
+            dragObject.style.pointerEvents = 'auto';
+            dragObject.style.zIndex = 1;
+            dragObject.remove();
+        }
     }
 
     get classNames() {
         const { card } = this.props;
-        //const { isVisibleLayer } = this.state;
         const classNames = {
             layer: ['card-name__layer'],
             card: ['card-name']
@@ -401,12 +280,75 @@ export default class Card extends Component {
             card: classNames.card.join(' ')
         }
     }
+    
+    openEditor = () => {
+        this.setState({
+            isVisibleQuickEditor: true,
+            quickEditor: {
+                top: this.$cardName.current.getBoundingClientRect().top,
+                left: this.$cardName.current.getBoundingClientRect().left,
+                width:  this.$cardName.current.clientWidth
+            }
+        }, () => {
+            this.$cardNameChange.current.select();
+            this.$cardNameChange.current.focus();
+        });
+    }
+
+    saveCardName = () => {
+        const { card, updateCardName } = this.props;
+
+        const value = this.$cardNameChange.current.value ? this.$cardNameChange.current.value : card.text;
+
+        console.log(card.id);
+        updateCardName(value, card.id);
+        this.setState( prevState => ({
+            isVisibleQuickEditor: !prevState.isVisibleQuickEditor
+        }));
+    }
+
+    handleClickOutside = (event) => {
+        const elem = document.elementFromPoint(event.pageX, event.pageY);
+        const editor = elem.closest('.quick-editor-card');
+
+        if (editor) {
+            return;
+        }
+
+        this.setState( prevState => ({
+            isVisibleQuickEditor: !prevState.isVisibleQuickEditor
+        }));
+    }
+
+    renderQuickEditorCard = () => {
+        const { isVisibleQuickEditor, quickEditor } = this.state;
+        const { card } = this.props;
+
+        if (isVisibleQuickEditor) {
+            return (
+                <div onClick={this.handleClickOutside} className='layer-card'>
+                    <div className='quick-editor-card'
+                        style={{
+                            top: `${quickEditor.top}px`,
+                            left: `${quickEditor.left}px`,
+                            width: `${quickEditor.width}px`
+                        }}
+                    >
+                        <textarea 
+                            ref={this.$cardNameChange}
+                            className='quick-editor-card__textarea'
+                            defaultValue={card.text}
+                        />
+                        <button onClick={this.saveCardName} className='add-list__button add-list__button_allowToPress'>Сохранить</button>
+                    </div>
+                </div>
+            )
+        }
+    }
 
     renderBody() {
         const { layer } = this.state;
-        const { text, card } = this.props;
-
-        //  console.warn(card.text, card)
+        const { card } = this.props;
 
         if (card.isDrag) {
             return (
@@ -421,16 +363,20 @@ export default class Card extends Component {
         }
 
         return (
-            <div
-                card='card'
-                className={this.classNames.card}
-                onMouseDown={this.onMouseDown}
-                onMouseUp={this.onMouseUp}
-                ref={this.$cardName}
-                data-position={card.position}
-            >
-                {text}
-            </div>
+            <React.Fragment>
+                <div
+                    card='card'
+                    className={this.classNames.card}
+                    onMouseDown={this.onMouseDown}
+                    onMouseUp={this.onMouseUp}
+                    ref={this.$cardName}
+                    data-position={card.position}
+                >
+                    {card.text}
+                </div>
+                {this.renderQuickEditorCard()}
+                <div onClick={this.openEditor} className='card-name__edit'></div>
+            </React.Fragment>
         )
     }
 

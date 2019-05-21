@@ -1,40 +1,66 @@
 import React, { Component } from 'react';
 import nanoid from 'nanoid';
-import { MIN_HEIGHT_TEXTAREA_LIST, MAX_HEIGHT_TEXTAREA_LIST, STEP_HEIGHT_AUTOSIZE_TEXTAREA_LIST } from '../../const';
+import PropTypes from 'prop-types';
+import { MIN_HEIGHT_TEXTAREA_LIST, MAX_HEIGHT_TEXTAREA_LIST, STEP_HEIGHT_AUTOSIZE_TEXTAREA_LIST, TYPE_SEARCH } from '../../const';
 import CardName from './CardName';
 import './index.scss';
 
 export default class List extends Component {
+    static propTypes = {
+        projectId: PropTypes.string,
+        list: PropTypes.object,
+        addCardToList: PropTypes.func,
+        findList: PropTypes.func,
+        updateCardNames: PropTypes.func,
+        updateLists: PropTypes.func,
+        findListIndex: PropTypes.func,
+        onMouseMove: PropTypes.func,
+        unsetDrag: PropTypes.func,
+        getLists: PropTypes.func,
+        changeListName: PropTypes.func,
+        localStorage: PropTypes.object
+    }
+
+    static defaultProps = {
+        projectId: '',
+        list: {},
+        addCardToList: () => { },
+        findList: () => { },
+        updateCardNames: () => { },
+        updateLists: () => { },
+        findListIndex: () => { },
+        onMouseMove: () => { },
+        unsetDrag: () => { },
+        getLists: () => { },
+        changeListName: () => { },
+        localStorage: () => { },
+    }
+
     constructor(props) {
         super();
         this.localStorage = props.localStorage;
         this.state = {
-            listName: props.name,
             isVisibleAddCardForm: false,
             isVisibleTextareaList: false,
-            cards: props.cards ? props.cards : [],
             isDrag: false,
-            isDropEl: false,
             isDropCard: false,
             isVisibleLayer: false,
-            historyDrags: [],
             lastPos: '',
+            cursor: {
+                x: 0,
+                y: 0
+            },
             shiftX: 0,
             shiftY: 0,
-            oldPosition: {
-                layerHeight: 76,
-                layerWidth: 260
+            layer: {
+                height: 76,
+                width: 260
             }
         }
         this.textareaNameList = React.createRef();
         this.hiddenTextAreaNameList = React.createRef();
         this.textareaCard = React.createRef();
         this.$card = React.createRef();
-    }
-    
-    shouldComponentUpdate(nextProps, nextState) {
-        return (JSON.parse(JSON.stringify(nextProps.list)) !== JSON.parse(JSON.stringify(this.props.list)))
-        return true;
     }
 
     componentWillUnmount() {
@@ -64,12 +90,8 @@ export default class List extends Component {
     };
 
     addCardToList = () => {
-        //const { cards } = this.state;
         const { addCardToList, list } = this.props;
         let { cards } = this.props;
-        const projectId = this.props.projectId;
-        const listId = this.props.listId;
-        const dataLS = this.localStorage.dataset;
         const cardName = this.textareaCard.current.value;
         const position = cards ? cards.length : 0;
 
@@ -89,7 +111,6 @@ export default class List extends Component {
         });
 
         addCardToList(cards, list.id);
-
 
         this.setState({
             ...this.state
@@ -118,27 +139,180 @@ export default class List extends Component {
     }
 
     handleClickOutside = () => {
+        const { list, changeListName } = this.props;
         const dataLS = this.localStorage.dataset;
         const id = this.props.projectId;
-        const listId = this.props.listId;
-        const listName = this.textareaNameList.current.value;
+        list.name = this.textareaNameList.current.value ? this.textareaNameList.current.value : list.name;
 
         for (let i = 0; i < dataLS.length; i++) {
             if (dataLS[i].id === id) {
-                let index = dataLS[i].lists.findIndex(lists => (lists.id === listId));
+                let index = dataLS[i].lists.findIndex(value => (value.id === list.id));
 
                 if (index !== -1) {
-                    dataLS[i].lists[index].name = dataLS[i].lists[index].name ? dataLS[i].lists[index].name = listName : '';
+                    dataLS[i].lists[index].name = dataLS[i].lists[index].name ? dataLS[i].lists[index].name = list.name : '';
                 }
             }
         }
 
-        this.setState({
-            listName
-        });
+        changeListName(list);
+
 
         this.localStorage.dataset = dataLS;
         this.changeNameList();
+    };
+
+    resizeArea = () => {
+        if (!this.textareaNameList.current.value) {
+            return;
+        }
+
+        this.hiddenTextAreaNameList.current.innerHTML = this.textareaNameList.current.value;
+
+        let height = this.hiddenTextAreaNameList.current.offsetHeight + STEP_HEIGHT_AUTOSIZE_TEXTAREA_LIST;
+
+        height = Math.max(MIN_HEIGHT_TEXTAREA_LIST, height);
+        height = Math.min(MAX_HEIGHT_TEXTAREA_LIST, height);
+        this.textareaNameList.current.style.height = height + 'px';
+
+        if (parseFloat(this.textareaNameList.current.style.height) >= MAX_HEIGHT_TEXTAREA_LIST) {
+            this.textareaNameList.current.style.overflow = 'hidden scroll';
+
+            return;
+        }
+
+        this.textareaNameList.current.style.overflow = 'hidden';
+    };
+
+    isOpenCardEditor = (data) => {
+        return data;
+    }
+
+    onMouseMove = (card) => {
+        const { onMouseMove, list } = this.props;
+
+        onMouseMove(list.id, card);
+    };
+
+    getListId = () => {
+        const { list } = this.props;
+
+        return list.id || '';
+    };
+
+    saveListPos = (data) => {
+        this.setState({
+            lastPos: data
+        })
+    };
+
+    getPositionLastDragged = () => {
+        const { lastPos } = this.state;
+        const { list } = this.props;
+
+        return lastPos !== '' ? lastPos : list.position;
+    };
+
+    isDragListValue = (data) => {
+        this.setState({
+            isDragListValue: data
+        });
+    };
+
+    isDropCard = (data) => {
+        this.setState({
+            isDropCard: data
+        });
+    }
+
+    onMouseDown = (event) => {
+        this.setState({
+            cursor: {
+                x: event.pageX,
+                y: event.pageY
+            },
+            layer: {
+                height: this.$card.current.offsetHeight,
+                width: this.$card.current.offsetWidth,
+            },
+            shiftX: event.pageX - this.$card.current.getBoundingClientRect().left,
+            shiftY: event.pageY - this.$card.current.getBoundingClientRect().top + 59
+        });
+
+        document.addEventListener('mousemove', this.handleMouseMoveList);
+        document.addEventListener('mouseup', this.onMouseUp);
+    }
+
+    handleMouseMoveList = (event) => {
+        const { isDrag, shiftX, shiftY, cursor, isDropCard } = this.state;
+        const { updateLists, getLists, list, findListIndex } = this.props;
+
+        this.setState({
+            isDrag: true
+        });
+
+        if (!isDrag || isDropCard) {
+            return;
+        }
+
+        if ((Math.abs(cursor.x - event.pageX) > 5) && (Math.abs(cursor.y - event.pageY)) > 5) {
+            this.setState({
+                isVisibleLayer: true
+            });
+            this.$card.current.style.zIndex = 9999;
+            this.$card.current.style.position = 'absolute';
+            this.$card.current.style.left = `${event.pageX - shiftX}px`;
+            this.$card.current.style.top = `${event.pageY - shiftY}px`;
+            this.$card.current.style.transform = 'rotate(3deg)';
+            this.$card.current.hidden = true;
+            const dropMouseElement = document.elementFromPoint(event.clientX, event.clientY);
+            const dropElementUp = dropMouseElement ? dropMouseElement.closest('[droppable="droppable"]') : null;
+
+            if (dropElementUp) {
+                const indexStart = findListIndex(TYPE_SEARCH.BY_ID, list.id);
+                const position = parseFloat(dropElementUp.dataset.position);
+                const indexEnd = findListIndex(TYPE_SEARCH.BY_POSITION, position);
+                const lists = getLists();
+
+                this.setState({
+                    isDroppedElement: true,
+                    newPosition: {
+                        x: dropElementUp.getBoundingClientRect().left,
+                        y: dropElementUp.getBoundingClientRect().top
+                    }
+                });
+
+                lists.splice(indexStart, 1);
+                lists.splice(indexEnd, 0, list);
+
+                updateLists(lists);
+            }
+
+            this.$card.current.hidden = false;
+        }
+
+        return false;
+    }
+
+    onMouseUp = () => {
+        document.removeEventListener('mousemove', this.handleMouseMoveList)
+        document.removeEventListener('mouseup', this.onMouseUp);
+
+        this.setState({
+            isVisibleLayer: false
+        });
+
+        // Для того чтобы после перетаскивания не срабатывали  события клика мыши
+        setTimeout(() => {
+            this.setState({
+                isDrag: false
+            });
+        }, 300);
+
+        this.$card.current.style.left = '';
+        this.$card.current.style.top = '';
+        this.$card.current.style.position = '';
+        this.$card.current.style.transform = '';
+        this.$card.current.style.zIndex = '';
     };
 
     get classNames() {
@@ -182,228 +356,51 @@ export default class List extends Component {
         }
     }
 
-    resizeArea = () => {
-        this.hiddenTextAreaNameList.current.innerHTML = this.textareaNameList.current.value;
+    updateCardName = (value, cardId) => {
+        const { list, updateCardName } = this.props;
 
-        let height = this.hiddenTextAreaNameList.current.offsetHeight + STEP_HEIGHT_AUTOSIZE_TEXTAREA_LIST;
+        const card = list.cards.find( card => ( card.id === cardId ));
+        card.text = value; 
 
-        height = Math.max(MIN_HEIGHT_TEXTAREA_LIST, height);
-        height = Math.min(MAX_HEIGHT_TEXTAREA_LIST, height);
-        this.textareaNameList.current.style.height = height + 'px';
+        console.log(list);
 
-        if (parseFloat(this.textareaNameList.current.style.height) >= MAX_HEIGHT_TEXTAREA_LIST) {
-            this.textareaNameList.current.style.overflow = 'hidden scroll';
-
-            return;
-        }
-
-        this.textareaNameList.current.style.overflow = 'hidden';
-    };
-
-    onMouseMove = (card) => {
-        const { onMouseMove, list } = this.props;
-      //  console.log(list);
-
-        onMouseMove(list.id, card);
-    }   
-
-    saveListPos = (data) => {
-    //    const { historyDrags } = this.state;
-     //   const { lastPos } = this.state;
-     //   historyDrags.push(data);
-
-        this.setState({
-     //       historyDrags,
-        lastPos: data
-            })
-    };
-
-    getPositionLastDragged = () => {
-        const { lastPos } = this.state;
-
-        return lastPos;
+        updateCardName(list)
     }
 
     renderCards() {
-        const { cards, lists, list, updateCards, updateCardNames, findList } = this.props;
-
-        //console.log('lists', list, cards);
+        const { cards, updateCardNames, findList, unsetDrag } = this.props;
 
         if (cards) {
             return cards.map(value => (
                 <CardName
-                    key={`${value.id}-${value.text}-${value.position}`}
+                    key={value.id}
                     card={value}
-                    cardId={value.id}
                     updateCardNames={updateCardNames}
-                    updateCards={updateCards}
-                    cards={cards}
-                    list={list}
                     findList={findList}
-                    lists={lists}
+                    getListId={this.getListId}
                     isDropCard={this.isDropCard}
                     saveListPos={this.saveListPos}
                     getPositionLastDragged={this.getPositionLastDragged}
+                    unsetDrag={unsetDrag}
+                    isOpenCardEditor={this.isOpenCardEditor}
+                    updateCardName={this.updateCardName}
                     onMouseMove={this.onMouseMove}
-                    onChangeCard={(card) => {
-                        console.log(card, list)
-                        this.props.onChangeCard(list.id, card)
-                    }}
-                    text={value.text}
                 />
             ));
         }
     };
 
-    updateCardNames = (data) => {
-        this.setState({
-            cards: data
-        });
-    };
-
-    isDragListValue = (data) => {
-        this.setState({
-            isDragListValue: data
-        });
-    };
-
-    isDropCard = (data) => {
-        this.setState({
-            isDropCard: data
-        });
-    }
-
-    onMouseDown = (event) => {
-        this.setState({
-            cursor: {
-                x: event.pageX,
-                y: event.pageY
-            },
-            oldPosition: {
-                x: this.$card.current.getBoundingClientRect().left,
-                y: this.$card.current.getBoundingClientRect().top,
-                layerHeight: this.$card.current.offsetHeight,
-                layerWidth: this.$card.current.offsetWidth,
-            },
-            shiftX: event.pageX - this.$card.current.getBoundingClientRect().left + 8,
-            shiftY: event.pageY - this.$card.current.getBoundingClientRect().top + 59
-        });
-
-        document.addEventListener('mousemove', this.handleMouseMoveList);
-        document.addEventListener('mouseup', this.onMouseUp);
-    }
-
-    handleMouseMoveList = (event) => {
-        const { isDrag, shiftX, shiftY, cursor, isDropCard } = this.state;
-        const { updateLists, lists, list, listId } = this.props;
-
-        this.setState({
-            isDrag: true
-        });
-
-        if (!isDrag || isDropCard) {
-            return;
-        }
-
-
-        if ((Math.abs(cursor.x - event.pageX) > 5) && (Math.abs(cursor.y - event.pageY)) > 5) {
-            this.$card.current.style.zIndex = 9999;
-            this.$card.current.style.position = 'absolute';
-            this.setState({
-                isVisibleLayer: true
-            });
-            this.$card.current.style.left = `${event.pageX - shiftX}px`;
-            this.$card.current.style.top = `${event.pageY - shiftY}px`;
-            this.$card.current.style.transform = 'rotate(3deg)';
-
-            this.$card.current.hidden = true;
-            const dropEl = document.elementFromPoint(event.clientX, event.clientY);
-            const dropElementUp = dropEl ? dropEl.closest('[droppable="droppable"]') : null;
-
-            if (dropElementUp) {
-                const indexStart = lists.findIndex(list => (list.id === listId));
-                const position = parseFloat(dropElementUp.dataset.position);
-                const indexEnd = lists.findIndex(list => (list.position === position));
-
-                this.setState({
-                    isDropEl: true,
-                    newPosition: {
-                        x: dropElementUp.getBoundingClientRect().left,
-                        y: dropElementUp.getBoundingClientRect().top
-                    }
-                });
-
-                lists.splice(indexStart, 1);
-                lists.splice(indexEnd, 0, list);
-
-                updateLists(lists);
-            }
-
-            this.$card.current.hidden = false;
-        }
-
-        return false;
-    }
-
-    onMouseUp = (event) => {
-        const { lists, updateLists } = this.props;
-        const { isDropEl, newPosition, oldPosition } = this.state;
-        // document.onmousemove = null;
-
-        document.removeEventListener('mousemove', this.handleMouseMoveList)
-        document.removeEventListener('mouseup', this.onMouseUp);
-
-
-
-        const dropEl = document.elementFromPoint(event.clientX, event.clientY);
-        const dropElementUp = dropEl ? dropEl.closest('[droppable="droppable"]') : null;
-
-        if (dropElementUp && isDropEl) {
-            this.$card.current.style.left = `${newPosition.x}px`;
-            this.$card.current.style.top = `${newPosition.y}px`;
-        } else {
-            this.$card.current.style.left = `${oldPosition.x}px`;
-            this.$card.current.style.top = `${oldPosition.y}px`;
-            this.setState({
-                isDropEl: false
-            });
-        }
-
-        this.setState({
-            isVisibleLayer: false
-        });
-
-        // Для того чтобы после перетаскивания не срабатывали  события клика мыши
-        setTimeout(() => {
-            this.setState({
-                isDrag: false
-            });
-        }, 300);
-
-        this.$card.current.style.left = '';
-        this.$card.current.style.top = '';
-        this.$card.current.style.position = '';
-        this.$card.current.style.transform = '';
-        this.$card.current.style.zIndex = '';
-
-        //  updateLists(lists);
-    };
-
-    onDragStart = () => {
-        return false;
-    }
-
     render() {
         const { list } = this.props;
-        const { listName } = this.state;
+        const { layer } = this.state;
 
         return (
             <div className='list-wrapper'>
                 <div
                     className={this.classNames.listLayer}
                     style={{
-                        height: this.state.oldPosition.layerHeight,
-                        width: this.state.oldPosition.layerWidth
+                        height: layer.height,
+                        width: layer.width
                     }}
                 />
                 <div
@@ -414,20 +411,20 @@ export default class List extends Component {
                     className={this.classNames.list}
                     droppable="droppable"
                     data-position={list.position}
-
                 >
                     <div className='list__header'>
-                        <div onClick={this.changeNameList} className={this.classNames.listName}>{listName}</div>
+                        <div onClick={this.changeNameList} className={this.classNames.listName}>{list.name}</div>
                         <textarea
                             onBlur={this.handleClickOutside}
                             onChange={this.resizeArea}
                             className={this.classNames.listTextareaHeader}
                             ref={this.textareaNameList}
-                            defaultValue={listName}
+                            defaultValue={list.name}
                         />
                         <div className={this.classNames.hiddenlistName}>
                             <div ref={this.hiddenTextAreaNameList} className="textarea_behavior" id="list__header-textarea_hidden" />
                         </div>
+                        <div className='list__menu' />
                     </div>
                     <div className='cards-wrapper'>
                         {this.renderCards()}
