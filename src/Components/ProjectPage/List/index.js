@@ -45,6 +45,7 @@ export default class List extends Component {
             isDrag: false,
             isDropCard: false,
             isVisibleLayer: false,
+            isDragCard: false,
             lastPos: '',
             cursor: {
                 x: 0,
@@ -63,9 +64,23 @@ export default class List extends Component {
         this.$card = React.createRef();
     }
 
+    componentWillMount() {
+        document.addEventListener('mousemove', this.hadleMouseMoveCard);
+    }
+
     componentWillUnmount() {
         document.removeEventListener('mousemove', this.handleMouseMoveList)
         document.removeEventListener('mouseup', this.onMouseUp);
+    }
+
+    hadleMouseMoveCard = (data, event) => {
+        const { isDragCard } = this.state;
+    };
+
+    isDrag = (data) => {
+        this.setState({
+            isDragCard: data
+        });
     }
 
     cardAdd = () => {
@@ -362,7 +377,7 @@ export default class List extends Component {
         const card = list.cards.find( card => ( card.id === cardId ));
         card.text = value; 
 
-        console.log(list);
+        console.log('list', list);
 
         updateCardName(list)
     }
