@@ -8,6 +8,8 @@ import projectInfo from '../../../package.json';
 import './index.scss';
 import AddProject from '../AddProject';
 import ProjectPage from '../ProjectPage';
+import Header from "../Header";
+import Input from "../Input";
 
 class App extends Component {
     constructor() {
@@ -24,7 +26,8 @@ class App extends Component {
             searchValue: '',
             search: [],
         }
-        this.inputSearch = React.createRef();
+        // this.inputSearch = React.createRef();
+        this.inputSearch = null;
         this.checkForRecentlyViewed();
     }
 
@@ -268,21 +271,21 @@ class App extends Component {
         }
         
         this.setState({ searchValue }, () => {
-            if (this.inputSearch.current) {
+            if (this.inputSearch && this.inputSearch.current) {
                 this.inputSearch.current.focus();
             }
         });
 
         setTimeout(() => {
             this.setState({ boards }, () => {
-                if (this.inputSearch.current) {
+                if (this.inputSearch && this.inputSearch.current) {
                     this.inputSearch.current.focus();
                 }
             });
         }, 300);
 
-        const isFavouriteExists = dataLS.find( element => ( element.name.indexOf(searchValue) !== -1 && element.isFavourite )) ? true : false;
-        const isRecentlyViewedExists = dataLS.find( element => ( element.name.indexOf(searchValue) !== -1 && element.isRecentlyViewed )) ? true : false;
+        const isFavouriteExists = !!dataLS.find(element => (element.name.indexOf(searchValue) !== -1 && element.isFavourite));
+        const isRecentlyViewedExists = !!dataLS.find(element => (element.name.indexOf(searchValue) !== -1 && element.isRecentlyViewed));
 
         if (!isFavouriteExists) {
             this.setState({
@@ -317,14 +320,21 @@ class App extends Component {
 
         return (
             <React.Fragment>
+                <Header>
+                    <Input
+                        handleChange={this.search}
+                        ref={this.inputSearch}
+                        value={searchValue}
+                    />
+                </Header>
                 <Route exact path='/' component={() => (
                     <React.Fragment>
                         <div className={this.classNames.overlay} />
                         <div className='control-panel'>
                             <div className='control-panel__container'>
-                                <div onChange={this.search} className='left-sidebar'>
-                                    <input ref={this.inputSearch} defaultValue={searchValue} className='left-sidebar__search' placeholder='' />
-                                </div>
+                                {/*<div onChange={this.search} className='left-sidebar'>*/}
+                                {/*    <input ref={this.inputSearch} defaultValue={searchValue} className='left-sidebar__search' placeholder='' />*/}
+                                {/*</div>*/}
                                 <div className='boards'>
                                     <AddProject
                                         isOpen={isOpenModalAddNewProject}

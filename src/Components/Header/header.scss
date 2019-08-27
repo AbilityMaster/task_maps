@@ -1,0 +1,54 @@
+.header {
+  background: #026aa7;
+  height: 32px;
+  display: flex;
+  padding: 3px;
+  position: relative;
+  align-items: center;
+
+  &__name {
+    color: #fff;
+    font-family: Arial, serif;
+    font-weight: 100;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    line-height: 32px;
+    margin: auto;
+    text-align: center;
+    z-index: 10;
+  }
+
+  &__home {
+    width: 30px;
+    height: 32px;
+    background-color: rgba(255, 255, 255, 0.3) ;
+    border-radius: 3px;
+    padding: 2px;
+    margin-right: 3px;
+    box-sizing: border-box;
+    position: relative;
+    cursor: pointer;
+    z-index: 20;
+    transition: background-color .15s;
+
+    &:hover {
+      background-color: hsla(0,0%,100%,.2);
+      border: none;
+      box-shadow: none;
+    }
+  }
+
+  &__home-icon {
+    background: url(../../img/home.svg);
+    position: absolute;
+    bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: 20px;
+    height: 20px;
+  }
+}

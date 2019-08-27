@@ -108,7 +108,7 @@ export default class ProjectPage extends Component {
         });
 
         this.localStorage.dataset = dataLS;
-    }
+    };
 
     onMouseMove = (listId, card) => {
         const { lists } = this.state;
@@ -121,7 +121,7 @@ export default class ProjectPage extends Component {
         this.setState({
             lists: tempLists
         });
-    }
+    };
 
     addCardToList = (cards, listId) => {
         const projects = this.localStorage.dataset;
@@ -152,13 +152,14 @@ export default class ProjectPage extends Component {
                 console.log(MESSAGES.ERROR.TYPE_FIND);
                 break;
         }
-    }
+    };
 
     findList = (key) => {
         const { lists } = this.state;
+        const list = lists.find(list => (list.position === key)) || '';
 
-        return lists.find(list => (list.position === key)) || '';
-    }
+        return list;
+    };
 
     unsetDrag = (listPosition, cardId) => {
         const { lists } = this.state;
@@ -173,7 +174,7 @@ export default class ProjectPage extends Component {
         this.setState({
             lists: tempLists
         });
-    }
+    };
 
     updateCardNames = (cards, listId) => {
         let lists = [];
@@ -188,12 +189,12 @@ export default class ProjectPage extends Component {
         this.setState({
             lists
         });
-    }
+    };
 
     getLists = () => {
         const { lists } = this.state;
 
-        return lists;
+        return JSON.parse(JSON.stringify(lists));
     };
 
     updateCardName = (list) => {
@@ -210,9 +211,10 @@ export default class ProjectPage extends Component {
 
     renderLists = () => {
         const { lists } = this.state;
+        const _lists = JSON.parse(JSON.stringify(lists));
         const id = this.props.match.params.id;
 
-        return lists.map(value =>
+        return _lists.map(value =>
             <List
                 key={value.id}
                 projectId={id}
