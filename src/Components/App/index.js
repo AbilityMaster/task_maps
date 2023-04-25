@@ -10,6 +10,10 @@ import AddProject from '../AddProject';
 import ProjectPage from '../ProjectPage';
 import Header from "../Header";
 import Input from "../Input";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faColumns} from "@fortawesome/free-solid-svg-icons";
+import LeftSideBar from "../LeftSideBar";
+import InputExt from "../InputExt";
 
 class App extends Component {
     constructor() {
@@ -329,12 +333,10 @@ class App extends Component {
                 </Header>
                 <Route exact path='/' component={() => (
                     <React.Fragment>
-                        <div className={this.classNames.overlay} />
+                        {/*<div className={this.classNames.overlay} />*/}
                         <div className='control-panel'>
                             <div className='control-panel__container'>
-                                {/*<div onChange={this.search} className='left-sidebar'>*/}
-                                {/*    <input ref={this.inputSearch} defaultValue={searchValue} className='left-sidebar__search' placeholder='' />*/}
-                                {/*</div>*/}
+                                <LeftSideBar />
                                 <div className='boards'>
                                     <AddProject
                                         isOpen={isOpenModalAddNewProject}

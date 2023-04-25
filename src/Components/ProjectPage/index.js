@@ -3,6 +3,7 @@ import nanoid from 'nanoid';
 import { DEFAULT_COLOR, TYPE_SEARCH, MESSAGES } from '../const';
 import List from './List';
 import './index.scss';
+import Modal from "../Modal";
 
 export default class ProjectPage extends Component {
     constructor(props) {
@@ -11,14 +12,17 @@ export default class ProjectPage extends Component {
         const dataLS = this.localStorage.dataset;
         const projectId = props.match.params.id;
         this.saveTime(projectId);
+        this.input = React.createRef();
+        this.$container = React.createRef();
         this.state = {
             projectName: this.getprojectName(dataLS, projectId),
             isVisibleAddHeaderForm: false,
             isVisibleInputNameProject: false,
             lists: this.loadLists(dataLS, projectId),
-            dragObject: {}
-        }
-        this.input = React.createRef();
+            dragObject: {},
+            reference: this.$container
+        };
+
         this.inputForNameProject = React.createRef();
         this.draggbleContainer = React.createRef();
     }
@@ -207,32 +211,12 @@ export default class ProjectPage extends Component {
         this.setState({
             lists: tempLists
         });
-    }
+    };
 
-    renderLists = () => {
-        const { lists } = this.state;
-        const _lists = JSON.parse(JSON.stringify(lists));
-        const id = this.props.match.params.id;
-
-        return _lists.map(value =>
-            <List
-                key={value.id}
-                projectId={id}
-                list={value}
-                cards={value.cards}
-                addCardToList={this.addCardToList}
-                findList={this.findList}
-                updateCardNames={this.updateCardNames}
-                updateLists={this.updateLists}
-                findListIndex={this.findListIndex}
-                onMouseMove={this.onMouseMove}
-                unsetDrag={this.unsetDrag}
-                getLists={this.getLists}
-                changeListName={this.changeListName}
-                updateCardName={this.updateCardName}
-                localStorage={this.localStorage}
-            />
-        );
+    openCard = (listId, cardId) => {
+        console.log();
+        console.log(listId, cardId);
+        this.setState({ isOpenModal: true });
     };
 
     changeListName = (list) => {
@@ -330,30 +314,59 @@ export default class ProjectPage extends Component {
             projectNameInput: classNames.projectNameInput.join(' ')
         }
     }
+    renderLists = () => {
+        const { lists } = this.state;
+        const _lists = JSON.parse(JSON.stringify(lists));
+        const id = this.props.match.params.id;
+
+        return _lists.map(value =>
+            <List
+                key={value.id}
+                projectId={id}
+                list={value}
+                cards={value.cards}
+                addCardToList={this.addCardToList}
+                findList={this.findList}
+                updateCardNames={this.updateCardNames}
+                updateLists={this.updateLists}
+                findListIndex={this.findListIndex}
+                onMouseMove={this.onMouseMove}
+                unsetDrag={this.unsetDrag}
+                getLists={this.getLists}
+                changeListName={this.changeListName}
+                updateCardName={this.updateCardName}
+                localStorage={this.localStorage}
+                openCard={this.openCard}
+                reference={this.state.reference}
+            />
+        );
+    };
 
     render() {
         const { projectName } = this.state;
 
         return (
-            <div className='project-board' style={{ background: this.background }}>
-                <div className='header-board'>
-                    <div onClick={this.changeNameOfProject} className={this.classNames.projectName}>{projectName}</div>
-                    <input ref={this.inputForNameProject} defaultValue={projectName} className={this.classNames.projectNameInput} type='text' />
-                </div>
-                <div className='project-board__body'>
-                    {this.renderLists()}
-                    <div className='list-wrapper-adding'>
-                        <div onClick={this.openAddHeaderForm} className={this.classNames.addList}>
-                            <div className={this.classNames.addListHeader}>+ Добавить список</div>
-                            <div className={this.classNames.addListForm}>
-                                <input ref={this.input} className='add-list__input' type='text' placeholder='Ввести заголовок списка'></input>
-                                <button onClick={this.addHeaderToList} className='add-list__button add-list__button_allowToPress'>Добавить список</button>
-                                <div onClick={this.closeAddHeaderForm} className='add-list__close'>✕</div>
+            <React.Fragment>
+                <div ref={this.$container} className='project-board' style={{ background: this.background }}>
+                    <div className='header-board'>
+                        <div onClick={this.changeNameOfProject} className={this.classNames.projectName}>{projectName}</div>
+                        <input ref={this.inputForNameProject} defaultValue={projectName} className={this.classNames.projectNameInput} type='text' />
+                    </div>
+                    <div className='project-board__body'>
+                        {this.renderLists()}
+                        <div className='list-wrapper-adding'>
+                            <div onClick={this.openAddHeaderForm} className={this.classNames.addList}>
+                                <div className={this.classNames.addListHeader}>+ Добавить список</div>
+                                <div className={this.classNames.addListForm}>
+                                    <input ref={this.input} className='add-list__input' type='text' placeholder='Ввести заголовок списка'/>
+                                    <button onClick={this.addHeaderToList} className='add-list__button add-list__button_allowToPress'>Добавить список</button>
+                                    <div onClick={this.closeAddHeaderForm} className='add-list__close'>✕</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div >
+                </div >
+            </React.Fragment>
         )
     }
 }

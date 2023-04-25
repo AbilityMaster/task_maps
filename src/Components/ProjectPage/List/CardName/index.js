@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import './index.scss';
+import Modal from "../../../Modal";
+import * as ReactDOM from "react-dom";
 
 export default class Card extends Component {
     static propTypes = {
@@ -34,8 +36,9 @@ export default class Card extends Component {
                 height: 18,
                 width: 252
             },
-            isVisibleQuickEditor: false
-        }
+            isVisibleQuickEditor: false,
+            isOpenModal: false
+        };
         this.$layer = React.createRef();
         this.$cardName = React.createRef();
         this.$cardNameChange = React.createRef();
@@ -212,7 +215,7 @@ export default class Card extends Component {
                 </div>
             )
         }
-    }
+    };
 
     renderBody() {
         const { layer } = this.state;
@@ -232,27 +235,55 @@ export default class Card extends Component {
 
         return (
             <React.Fragment>
-                <div
-                    card='card'
-                    className={this.classNames.card}
-                    onMouseDown={this.handleMouseDown}
-                    onMouseUp={this.handleMouseUp}
-                    ref={this.$cardName}
-                    data-position={card.position}
-                >
-                    {card.text}
-                </div>
+                    <div
+                        card='card'
+                        className={this.classNames.card}
+                        onMouseDown={this.handleMouseDown}
+                        onMouseUp={this.handleMouseUp}
+                        ref={this.$cardName}
+                        data-position={card.position}
+                        onClick={() => this.setState( { isOpenModal: true })}
+                    >
+                        {card.text}
+                    </div>
                 {this.renderQuickEditorCard()}
                 <div onClick={this.openEditor} className='card-name__edit'/>
             </React.Fragment>
         )
     }
 
+    onChange = (event, { value }) => {
+        const { card, updateCardName } = this.props;
+
+        updateCardName(value, card.id);
+    };
+
+    renderModal = () => {
+        const { card, listName } = this.props;
+
+        if (this.props.reference && this.props.reference.current) {
+            return ReactDOM.createPortal(
+                <Modal
+                    onChange={this.onChange}
+                    name={card.text}
+                    listName={listName}
+                    isOpen={this.state.isOpenModal}
+                    onClose={() => { this.setState({ isOpenModal: false })}}
+                />, this.props.reference.current);
+        }
+
+        return null;
+    };
+
     render() {
+
         return (
-            <div className='card-wrapper'>
-                {this.renderBody()}
-            </div>
+                <React.Fragment>
+                    {this.renderModal()}
+                    <div className='card-wrapper'>
+                        {this.renderBody()}
+                    </div>
+                </React.Fragment>
         )
     }
 }

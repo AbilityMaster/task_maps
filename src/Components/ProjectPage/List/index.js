@@ -514,6 +514,8 @@ export default class List extends Component {
                 <CardName
                     key={value.id}
                     card={value}
+                    listName={this.props.list.name}
+                    listId={this.props.list.id}
                     updateCardNames={updateCardNames}
                     findList={findList}
                     getListId={this.getListId}
@@ -524,6 +526,8 @@ export default class List extends Component {
                     updateCardName={this.updateCardName}
                     setDragObjectInfo={this.setDragObjectInfo}
                     handleMouseMoveCard={this.handleMouseMoveCard}
+                    openCard={this.props.openCard}
+                    reference={this.props.reference}
                 />
             ));
         }
